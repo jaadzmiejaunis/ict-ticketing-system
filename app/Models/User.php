@@ -21,6 +21,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'avatar',
+        'role',
+        'is_active',
     ];
 
     /**
@@ -44,5 +48,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Relationship: A user (staff) can have many tickets
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
     }
 }
