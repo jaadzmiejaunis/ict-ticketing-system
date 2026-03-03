@@ -13,19 +13,22 @@ class TicketController extends Controller
     {
         $query = Ticket::query();
 
-        // 1. If filtering for "Assigned by Me", only show those you assigned to others
-        if ($request->get('filter') === 'assigned_by_me') {
-            $query->where('assigned_by', Auth::id());
-        }
-        // 2. If you are a normal staff member (not admin), only show your own workload
-        elseif (strtolower(Auth::user()->role) !== 'admin') {
-            $query->where(function($q) {
-                $q->where('assigned_to', Auth::id())
-                ->orWhere('assigned_by', Auth::id());
-            });
+        // 1. Priority Filter (From your new search bar dropdown)
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
         }
 
-        // Standard search and status filters
+        // 2. Status Filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // 3. FIXED: Assigned by Me Filter
+        if ($request->get('filter') === 'assigned_by_me') {
+            $query->where('assigned_by', \Illuminate\Support\Facades\Auth::id());
+        }
+
+        // 4. Search Keywords
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
@@ -33,11 +36,11 @@ class TicketController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        // 5. Sequential ID Sorting
+        $sort = $request->get('sort', 'id_desc');
+        $query->orderBy('id', $sort === 'id_asc' ? 'asc' : 'desc');
 
-        $tickets = $query->latest()->paginate(10);
+        $tickets = $query->with(['assignee', 'assigner', 'resolver'])->paginate(10);
         return view('tickets.index', compact('tickets'));
     }
 
@@ -93,6 +96,7 @@ class TicketController extends Controller
             'due_date'      => 'nullable|date',
         ]);
 
+        // Ensure status is updated properly (important for the "On Hold" button)
         $ticket->update($validated);
 
         return redirect()->route('tickets.index')->with('success', 'Ticket updated successfully.');
@@ -203,7 +207,7 @@ class TicketController extends Controller
     {
         $ticket->update([
             'assigned_to' => Auth::id(),
-            'assigned_by' => Auth::id(), // Ensure this is set so you can track it!
+            'assigned_by' => Auth::id(),
             'status' => 'Assigned'
         ]);
 
@@ -230,12 +234,16 @@ class TicketController extends Controller
     // 2. Resolve a ticket (Strict Security!)
     public function resolveTask(Ticket $ticket)
     {
-        // Reverted: Only the owner can resolve
-        if (Auth::id() !== $ticket->assigned_to) {
+        // Ensure security check remains
+        if (Auth::id() !== $ticket->assigned_to && strtolower(Auth::user()->role) !== 'admin') {
             abort(403, 'Unauthorized action.');
         }
 
-        $ticket->update(['status' => 'Resolved']);
+        $ticket->update([
+            'status' => 'Resolved',
+            'resolved_by' => Auth::id() // Record who finished the task
+        ]);
+
         return back()->with('success', 'Ticket Resolved.');
     }
 

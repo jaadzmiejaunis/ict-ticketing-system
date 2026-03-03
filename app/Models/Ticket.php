@@ -21,6 +21,7 @@ class Ticket extends Model
         'due_date',
         'assigned_to',
         'assigned_by',
+        'resolved_by',
     ];
 
     // Relationship: A ticket belongs to a User (Staff)
@@ -29,9 +30,20 @@ class Ticket extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Allows you to use $ticket->assignee->name in your Blade files!
+    // The person currently doing the work
     public function assignee()
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    // The person who assigned the work
+    public function assigner()
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function resolver()
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
     }
 }

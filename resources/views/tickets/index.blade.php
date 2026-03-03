@@ -1,17 +1,25 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-white leading-tight">
-            {{ __('Ticket Management') }}
-        </h2>
-    </x-slot>
-
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-white">Ticket Management</h1>
+                <h1 class="text-2xl font-bold text-white">Ticket Management</h1>
 
                 <div class="flex gap-3">
+                    @if(request('filter') || request('search') || request('status'))
+                        <a href="{{ route('tickets.index') }}"
+                           class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded-md font-bold transition shadow-lg flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
+                            Show All Tickets
+                        </a>
+                    @endif
+
+                    <a href="{{ route('tickets.index', ['filter' => 'assigned_by_me']) }}"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md font-bold transition shadow-lg flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        Assigned by Me
+                    </a>
+
                     <a href="{{ route('tickets.create') }}"
                        class="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-md font-bold transition shadow-lg flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -26,6 +34,7 @@
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Search Keywords</label>
                         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, issue, or description..." class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
+
                     <div class="w-full md:w-48">
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
                         <select name="status" class="w-full border-gray-300 rounded-md shadow-sm">
@@ -36,6 +45,25 @@
                             <option value="Resolved" {{ request('status') == 'Resolved' ? 'selected' : '' }}>Resolved</option>
                         </select>
                     </div>
+
+                    <div class="w-full md:w-48">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Priority</label>
+                        <select name="priority" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="">All Priorities</option>
+                            <option value="High" {{ request('priority') == 'High' ? 'selected' : '' }}>High</option>
+                            <option value="Medium" {{ request('priority') == 'Medium' ? 'selected' : '' }}>Medium</option>
+                            <option value="Low" {{ request('priority') == 'Low' ? 'selected' : '' }}>Low</option>
+                        </select>
+                    </div>
+
+                    <div class="w-full md:w-48">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sort By</label>
+                        <select name="sort" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="id_desc" {{ request('sort') == 'id_desc' ? 'selected' : '' }}>Newest (ID)</option>
+                            <option value="id_asc" {{ request('sort') == 'id_asc' ? 'selected' : '' }}>Oldest (ID)</option>
+                        </select>
+                    </div>
+
                     <div class="flex items-end">
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-bold transition">
                             Search
@@ -60,12 +88,35 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse($tickets as $ticket)
-                                <tr class="hover:bg-gray-50 transition">
+                                <tr class="group transition {{ $ticket->priority === 'High' ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-gray-50' }}">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{{ $ticket->id }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $ticket->reporter_name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold">
-                                        <a href="{{ route('tickets.show', $ticket) }}" class="hover:underline">{{ $ticket->title }}</a>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <div class="flex flex-col">
+                                            <a href="{{ route('tickets.show', $ticket) }}" class="text-blue-600 font-semibold hover:underline">
+                                                {{ $ticket->title }}
+                                            </a>
+
+                                            <div class="hidden group-hover:block transition-all duration-200 mt-0.5">
+                                                @if($ticket->status === 'Resolved' && $ticket->resolved_by)
+                                                    <span class="text-[10px] text-gray-500 font-bold">
+                                                        Resolved by {{ $ticket->resolver->name ?? 'Staff' }}
+                                                    </span>
+                                                @elseif($ticket->assigned_to)
+                                                    <span class="text-[10px] text-indigo-600 font-bold">
+                                                        Assigned to {{ $ticket->assignee->name }}
+                                                        @if($ticket->assigned_by)
+                                                            <span class="text-gray-400 font-normal italic">(by {{ $ticket->assigner->name ?? 'System' }})</span>
+                                                        @endif
+                                                    </span>
+                                                @else
+                                                    <span class="text-[10px] text-gray-400 italic">Currently Unassigned</span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </td>
+
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 py-1 text-xs font-bold rounded-full bg-purple-100 text-purple-700">{{ $ticket->category }}</span>
                                     </td>
@@ -76,10 +127,10 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-3 py-1 text-xs font-bold rounded-full border
+                                        <span class="px-3 py-1 text-xs font-bold rounded-full border shadow-sm
                                             {{ $ticket->status == 'Open' ? 'bg-green-50 text-green-700 border-green-200' :
-                                               ($ticket->status == 'Assigned' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                               ($ticket->status == 'On Hold' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200')) }}">
+                                            ($ticket->status == 'Assigned' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                            ($ticket->status == 'On Hold' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200')) }}">
                                             {{ $ticket->status }}
                                         </span>
                                     </td>
@@ -99,7 +150,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="p-4">
+                <div class="p-4 bg-gray-50 border-t border-gray-100 rounded-b-lg">
                     {{ $tickets->links() }}
                 </div>
             </div>

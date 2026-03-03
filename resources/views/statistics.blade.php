@@ -1,34 +1,30 @@
 <x-app-layout>
     <div class="py-6"> <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-white">Visual Statistics Dashboard <span class="text-indigo-400 text-lg ml-2">({{ $stats['month_name'] }})</span></h2>
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
 
-            <div class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-white">Visual Statistics Dashboard <span class="text-indigo-400 text-lg ml-2">({{ $stats['month_name'] }})</span></h2>
-                </div>
+                <form method="GET" action="{{ route('statistics') }}" class="flex items-center m-0">
+                    <div class="flex items-stretch bg-gray-800 rounded-md border border-gray-600 overflow-hidden shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all h-[42px]">
 
-                <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                        <label for="month-picker" class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 cursor-pointer transition-colors border-r border-blue-700">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="text-sm font-bold whitespace-nowrap">Select Month:</span>
+                        </label>
 
-                    <form method="GET" action="{{ route('statistics') }}" class="flex items-center m-0">
-                        <div class="flex items-stretch bg-gray-800 rounded-md border border-gray-600 overflow-hidden shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all h-[42px]">
+                        <input type="month" id="month-picker" name="month" value="{{ $stats['selected_month'] }}"
+                                onchange="this.form.submit()"
+                                onclick="this.showPicker()"
+                                class="bg-transparent text-white border-none focus:ring-0 text-sm font-bold px-4 cursor-pointer outline-none w-[140px] [&::-webkit-calendar-picker-indicator]:hidden">
+                    </div>
+                </form>
 
-                            <label for="month-picker" class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 cursor-pointer transition-colors border-r border-blue-700">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <span class="text-sm font-bold whitespace-nowrap">Select Month:</span>
-                            </label>
-
-                            <input type="month" id="month-picker" name="month" value="{{ $stats['selected_month'] }}"
-                                   onchange="this.form.submit()"
-                                   onclick="this.showPicker()"
-                                   class="bg-transparent text-white border-none focus:ring-0 text-sm font-bold px-4 cursor-pointer outline-none w-[140px] [&::-webkit-calendar-picker-indicator]:hidden">
-                        </div>
-                    </form>
-
-                    <a href="{{ route('tickets.pdf', ['month' => $stats['selected_month']]) }}" class="bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-bold transition text-sm flex items-center gap-2 shadow-sm w-full sm:w-auto justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        Download PDF Report
-                    </a>
-                </div>
+                <a href="{{ route('tickets.pdf', ['month' => $stats['selected_month']]) }}" class="bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-bold transition text-sm flex items-center gap-2 shadow-sm w-full sm:w-auto justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download PDF Report
+                </a>
             </div>
+        </div>
 
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-gray-800">

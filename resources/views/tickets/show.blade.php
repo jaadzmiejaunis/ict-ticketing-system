@@ -44,22 +44,31 @@
                     <div><span class="font-bold text-gray-800">Last Updated:</span> {{ $ticket->updated_at->diffForHumans() }}</div>
                 </div>
 
-                <div class="bg-gray-800 p-6 rounded-lg mt-6 shadow-inner border border-gray-700">
-                    <h3 class="text-white font-bold mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                <div class="bg-white p-6 rounded-lg mt-6 shadow-sm border border-gray-200">
+                    <h3 class="text-gray-900 font-bold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                         Task Management
                     </h3>
 
-                    <div class="mb-6 pb-4 border-b border-gray-700">
-                        @if($ticket->assigned_to)
+                    <div class="mb-6 pb-4 border-b border-gray-100 space-y-2">
+                        @if($ticket->status === 'Resolved')
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+                                <p class="text-blue-600 font-bold">Task Resolved By:
+                                    <span class="text-gray-900">{{ $ticket->resolver->name ?? 'System Staff' }}</span>
+                                </p>
+                            </div>
+                        @elseif($ticket->assigned_to)
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                <p class="text-blue-400 font-bold">Currently Assigned To: <span class="text-white">{{ $ticket->assignee->name }}</span></p>
+                                <p class="text-indigo-600 font-bold">Currently Assigned To:
+                                    <span class="text-gray-900">{{ $ticket->assignee->name }}</span>
+                                </p>
                             </div>
                         @else
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                <p class="text-gray-400 font-bold italic">Status: Unassigned / Waiting for Staff</p>
+                                <p class="text-gray-500 font-bold italic">Status: Unassigned / Waiting for Staff</p>
                             </div>
                         @endif
                     </div>
@@ -69,7 +78,7 @@
                             @if(!$ticket->assigned_to)
                                 <form action="{{ route('tickets.assign', $ticket->id) }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-lg">
+                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
                                         Claim This Task
                                     </button>
                                 </form>
@@ -108,68 +117,35 @@
                                 <form action="{{ route('tickets.unassign', $ticket->id) }}" method="POST" onsubmit="return confirm('Drop this task?')">
                                     @csrf
                                     <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
-                                        Drop Task (Unassign)
+                                        Drop Task
                                     </button>
                                 </form>
                             @endif
-
-                            @if(strtolower(Auth::user()->role) === 'admin')
-                                <a href="{{ route('tickets.index', ['filter' => 'assigned_by_me']) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md flex items-center justify-center">
-                                    Tickets Assigned by Me
-                                </a>
-                            @endif
                         </div>
 
-                        @if(strtolower(Auth::user()->role) === 'admin' && $ticket->status !== 'Resolved')
-                            <div class="p-5 bg-gray-900/50 rounded-xl border border-gray-700 shadow-inner">
+                        @if($ticket->status !== 'Resolved' && (strtolower(Auth::user()->role) === 'admin' || Auth::id() === $ticket->assigned_to))
+                            <div class="p-5 bg-gray-50 rounded-xl border border-gray-200 shadow-inner mt-4">
                                 <form action="{{ route('tickets.transfer', $ticket->id) }}" method="POST">
                                     @csrf
-                                    <label class="block text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-3">
-                                        {{ $ticket->assigned_to ? 'Administrative Reassignment' : 'Direct Assignment to Staff' }}
+                                    <label class="block text-[10px] text-indigo-600 font-black uppercase tracking-widest mb-3">
+                                        {{ strtolower(Auth::user()->role) === 'admin' ? 'Administrative Reassign' : 'Transfer My Task' }}
                                     </label>
                                     <div class="flex flex-col md:flex-row gap-3 items-stretch">
-                                        <div class="flex-grow">
-                                            <select name="new_user_id" id="staff-search" class="w-full" required>
-                                                <option value="" disabled selected>Search for staff member...</option>
-                                                @foreach($users as $user)
-                                                    @if($user->id !== $ticket->assigned_to)
-                                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                                    @endif
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <button type="submit" class="h-11 px-8 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-bold transition-all shadow-lg flex items-center justify-center gap-2 flex-shrink-0">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                                            {{ $ticket->assigned_to ? 'Move Task' : 'Assign Staff' }}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        @elseif($ticket->status === 'On Hold' && Auth::id() === $ticket->assigned_to)
-                            <div class="p-5 bg-gray-900/50 rounded-xl border border-gray-700 shadow-inner">
-                                <form action="{{ route('tickets.transfer', $ticket->id) }}" method="POST">
-                                    @csrf
-                                    <label class="block text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-3">Transfer to Staff Member</label>
-                                    <div class="flex flex-col md:flex-row gap-3 items-stretch">
-                                        <div class="flex-grow">
-                                            <select name="new_user_id" id="staff-search-staff" class="w-full staff-select" required>
-                                                <option value="" disabled selected>Search for staff...</option>
-                                                @foreach($users as $user)
-                                                    @if($user->id !== Auth::id())
-                                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                                    @endif
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <button type="submit" class="h-11 px-8 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-bold h-11 transition shadow-lg flex items-center justify-center gap-2">
+                                        <select name="new_user_id" id="staff-search" class="w-full" required>
+                                            <option value="" disabled selected>Search for staff...</option>
+                                            @foreach($users as $user)
+                                                @if($user->id !== $ticket->assigned_to && $user->id !== Auth::id())
+                                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                                @endif
+                                            @endforeach
+                                        </select>
+                                        <button type="submit" class="h-11 px-8 bg-purple-600 text-white rounded-md font-bold">
                                             Move Task
                                         </button>
                                     </div>
                                 </form>
                             </div>
                         @endif
-                    </div>
-                </div>
 
                 <div class="flex items-center gap-4 mt-8 pt-6 border-t border-gray-100">
                     <a href="{{ route('tickets.edit', $ticket) }}" class="bg-indigo-600 text-white px-5 py-2 rounded-md hover:bg-indigo-700 font-bold transition shadow-sm">
@@ -194,23 +170,12 @@
 
     <script>
         $(document).ready(function() {
-            const staffSearch = $('#staff-search, .staff-select').select2({
+            $('#staff-search').select2({
                 placeholder: "Search for a staff member...",
                 allowClear: true,
                 width: '100%',
-                selectionCssClass: '!bg-gray-900 !border-gray-700 !h-11 !flex !items-center !text-gray-100 !px-4 !rounded-md',
-                dropdownCssClass: '!bg-gray-800 !border-gray-700 !text-white !shadow-2xl'
-            });
-
-            staffSearch.on('select2:open', function() {
-                setTimeout(() => {
-                    const searchBox = document.querySelector('.select2-search__field');
-                    if(searchBox) {
-                        searchBox.style.backgroundColor = '#111827';
-                        searchBox.style.color = '#ffffff';
-                        searchBox.style.border = '1px solid #374151';
-                    }
-                }, 0);
+                selectionCssClass: '!bg-white !border-gray-300 !h-11 !flex !items-center !text-gray-900 !px-4 !rounded-md',
+                dropdownCssClass: '!bg-white !border-gray-300 !text-gray-900 !shadow-2xl'
             });
         });
     </script>
