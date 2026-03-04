@@ -13,26 +13,27 @@ class TicketController extends Controller
     {
         $query = Ticket::query();
 
-        // 1. Priority Filter (From your new search bar dropdown)
+        // 1. Handle Priority Filter
         if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
         }
 
-        // 2. Status Filter
+        // 2. Handle Status Filter
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // 3. FIXED: Assigned by Me Filter
+        // 3. FIXED: Handle Assigned by Me
         if ($request->get('filter') === 'assigned_by_me') {
             $query->where('assigned_by', \Illuminate\Support\Facades\Auth::id());
         }
 
-        // 4. Search Keywords
+        // 4. Handle Search Keywords
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
-                ->orWhere('reporter_name', 'like', '%' . $request->search . '%');
+                ->orWhere('reporter_name', 'like', '%' . $request->search . '%')
+                ->orWhere('id', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -99,7 +100,8 @@ class TicketController extends Controller
         // Ensure status is updated properly (important for the "On Hold" button)
         $ticket->update($validated);
 
-        return redirect()->route('tickets.index')->with('success', 'Ticket updated successfully.');
+        return redirect()->route('tickets.show', $ticket)
+                     ->with('success', 'Ticket status updated to On Hold.');
     }
 
     // Delete the ticket
@@ -260,5 +262,14 @@ class TicketController extends Controller
         return back()->with('success', 'Task reassigned.');
     }
 
+    // NEW METHOD: Allows Nathan Drake to reopen a task
+    public function undoResolve(Ticket $ticket)
+    {
+        $ticket->update([
+            'status' => 'Assigned',
+            'resolved_by' => null,
+        ]);
 
+        return back()->with('success', 'Resolution undone. Ticket is now active again.');
+    }
 }

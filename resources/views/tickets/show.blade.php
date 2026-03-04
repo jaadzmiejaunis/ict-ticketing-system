@@ -1,12 +1,9 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-white leading-tight">
-            {{ __('Ticket Details #') . $ticket->id }}
-        </h2>
-    </x-slot>
-
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-white">{{ __('Ticket Details #') . $ticket->id }}</h1>
+            </div>
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
 
                 <div class="mb-6 border-b border-gray-200 pb-4 flex justify-between items-start">
@@ -60,8 +57,9 @@
                             </div>
                         @elseif($ticket->assigned_to)
                             <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                <p class="text-indigo-600 font-bold">Currently Assigned To:
+                                <div class="w-2 h-2 rounded-full bg-green-500 {{ $ticket->status !== 'On Hold' ? 'animate-pulse' : '' }}"></div>
+                                <p class="{{ $ticket->status === 'On Hold' ? 'text-yellow-600' : 'text-indigo-600' }} font-bold">
+                                    {{ $ticket->status === 'On Hold' ? 'Task Currently Paused:' : 'Currently Assigned To:' }}
                                     <span class="text-gray-900">{{ $ticket->assignee->name }}</span>
                                 </p>
                             </div>
@@ -75,95 +73,104 @@
 
                     <div class="space-y-6">
                         <div class="flex flex-wrap gap-3 items-center">
-                            @if(!$ticket->assigned_to)
-                                <form action="{{ route('tickets.assign', $ticket->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
-                                        Claim This Task
-                                    </button>
-                                </form>
-                            @elseif(strtolower(Auth::user()->role) === 'admin' && Auth::id() !== $ticket->assigned_to)
-                                <form action="{{ route('tickets.assign', $ticket->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
-                                        Take Over Task
-                                    </button>
-                                </form>
-                            @endif
-
-                            @if($ticket->assigned_to && (Auth::id() === $ticket->assigned_to || strtolower(Auth::user()->role) === 'admin') && $ticket->status !== 'Resolved')
-                                <form action="{{ route('tickets.resolve', $ticket->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
-                                        Mark as Resolved
-                                    </button>
-                                </form>
-
-                                @if($ticket->status !== 'On Hold')
-                                    <form action="{{ route('tickets.update', $ticket->id) }}" method="POST">
-                                        @csrf @method('PUT')
-                                        <input type="hidden" name="status" value="On Hold">
-                                        <input type="hidden" name="reporter_name" value="{{ $ticket->reporter_name }}">
-                                        <input type="hidden" name="title" value="{{ $ticket->title }}">
-                                        <input type="hidden" name="description" value="{{ $ticket->description }}">
-                                        <input type="hidden" name="priority" value="{{ $ticket->priority }}">
-                                        <input type="hidden" name="category" value="{{ $ticket->category }}">
+                            @if($ticket->status === 'Resolved')
+                                @if(strtolower(Auth::user()->role) === 'admin' || Auth::id() === $ticket->assigned_to)
+                                    <form action="{{ route('tickets.undo-resolve', $ticket) }}" method="POST">
+                                        @csrf
                                         <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
-                                            Put On Hold
+                                            Undo Resolution
                                         </button>
                                     </form>
                                 @endif
+                            @else
+                                @if($ticket->assigned_to && (Auth::id() === $ticket->assigned_to || strtolower(Auth::user()->role) === 'admin'))
+                                    <form action="{{ route('tickets.resolve', $ticket) }}" method="POST" onsubmit="return confirm('Mark as Resolved?')">
+                                        @csrf
+                                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
+                                            Mark as Resolved
+                                        </button>
+                                    </form>
 
-                                <form action="{{ route('tickets.unassign', $ticket->id) }}" method="POST" onsubmit="return confirm('Drop this task?')">
-                                    @csrf
-                                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
-                                        Drop Task
-                                    </button>
-                                </form>
+                                    @if($ticket->status !== 'On Hold')
+                                        <form action="{{ route('tickets.update', $ticket->id) }}" method="POST">
+                                            @csrf @method('PUT')
+                                            <input type="hidden" name="status" value="On Hold">
+                                            <input type="hidden" name="reporter_name" value="{{ $ticket->reporter_name }}"><input type="hidden" name="title" value="{{ $ticket->title }}"><input type="hidden" name="description" value="{{ $ticket->description }}"><input type="hidden" name="priority" value="{{ $ticket->priority }}"><input type="hidden" name="category" value="{{ $ticket->category }}">
+                                            <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
+                                                Put On Hold
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    <form action="{{ route('tickets.unassign', $ticket->id) }}" method="POST" onsubmit="return confirm('Drop this task?')">
+                                        @csrf
+                                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
+                                            Drop Task
+                                        </button>
+                                    </form>
+                                @elseif(!$ticket->assigned_to)
+                                    <form action="{{ route('tickets.assign', $ticket->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md">
+                                            Claim This Task
+                                        </button>
+                                    </form>
+                                @endif
                             @endif
                         </div>
 
-                        @if($ticket->status !== 'Resolved' && (strtolower(Auth::user()->role) === 'admin' || Auth::id() === $ticket->assigned_to))
-                            <div class="p-5 bg-gray-50 rounded-xl border border-gray-200 shadow-inner mt-4">
-                                <form action="{{ route('tickets.transfer', $ticket->id) }}" method="POST">
-                                    @csrf
-                                    <label class="block text-[10px] text-indigo-600 font-black uppercase tracking-widest mb-3">
-                                        {{ strtolower(Auth::user()->role) === 'admin' ? 'Administrative Reassign' : 'Transfer My Task' }}
-                                    </label>
-                                    <div class="flex flex-col md:flex-row gap-3 items-stretch">
-                                        <select name="new_user_id" id="staff-search" class="w-full" required>
-                                            <option value="" disabled selected>Search for staff...</option>
-                                            @foreach($users as $user)
-                                                @if($user->id !== $ticket->assigned_to && $user->id !== Auth::id())
-                                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                                @endif
-                                            @endforeach
-                                        </select>
-                                        <button type="submit" class="h-11 px-8 bg-purple-600 text-white rounded-md font-bold">
-                                            Move Task
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                        @if($ticket->status !== 'Resolved')
+                            @php
+                                $isAdmin = strtolower(Auth::user()->role) === 'admin';
+                                $isAssignee = Auth::id() === $ticket->assigned_to;
+                                $isOnHold = $ticket->status === 'On Hold';
+                            @endphp
+
+                            @if($isAdmin || ($isAssignee && $isOnHold))
+                                <div class="p-5 bg-gray-50 rounded-xl border border-gray-200 shadow-inner mt-4">
+                                    <form action="{{ route('tickets.transfer', $ticket->id) }}" method="POST">
+                                        @csrf
+                                        <label class="block text-[10px] text-indigo-600 font-black uppercase tracking-widest mb-3">
+                                            {{ $isAdmin ? 'Administrative Reassign' : 'Transfer My Task' }}
+                                        </label>
+                                        <div class="flex flex-col md:flex-row gap-3 items-stretch">
+                                            <select name="new_user_id" id="staff-search" class="w-full" required>
+                                                <option value="" disabled selected>Search for staff...</option>
+                                                @foreach($users as $user)
+                                                    @if($user->id !== $ticket->assigned_to)
+                                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                                    @endif
+                                                @endforeach
+                                            </select>
+                                            <button type="submit" class="h-11 px-8 bg-purple-600 text-white rounded-md font-bold shadow-md hover:bg-purple-700 transition">
+                                                {{ $isAdmin ? 'Assign' : 'Move Task' }}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            @endif
                         @endif
-
-                <div class="flex items-center gap-4 mt-8 pt-6 border-t border-gray-100">
-                    <a href="{{ route('tickets.edit', $ticket) }}" class="bg-indigo-600 text-white px-5 py-2 rounded-md hover:bg-indigo-700 font-bold transition shadow-sm">
-                        Edit Ticket
-                    </a>
-
-                    <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Delete this ticket?');">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="bg-red-50 text-red-600 px-5 py-2 rounded-md hover:bg-red-100 border border-red-200 font-bold transition shadow-sm">
-                            Delete
-                        </button>
-                    </form>
-
-                    <a href="{{ route('tickets.index') }}" class="ml-auto text-gray-500 hover:text-gray-900 font-bold transition flex items-center gap-1">
-                        &larr; Back to Dashboard
-                    </a>
+                    </div>
                 </div>
 
+                    <div class="flex items-center gap-4 mt-8 pt-6 border-t border-gray-100">
+                        <a href="{{ route('tickets.edit', $ticket) }}" class="bg-indigo-600 text-white px-5 py-2 rounded-md hover:bg-indigo-700 font-bold transition shadow-sm">
+                            Edit Ticket
+                        </a>
+
+                        <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Delete this ticket?');">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="bg-red-50 text-red-600 px-5 py-2 rounded-md hover:bg-red-100 border border-red-200 font-bold transition shadow-sm">
+                                Delete
+                            </button>
+                        </form>
+
+                        <a href="{{ route('tickets.index') }}" class="ml-auto text-gray-500 hover:text-gray-900 font-bold transition flex items-center gap-1">
+                            &larr; Back to Dashboard
+                        </a>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>

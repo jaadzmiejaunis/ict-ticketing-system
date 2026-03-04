@@ -37,6 +37,15 @@ class TrackUserActivity
             }
         }
 
+        // If the user is logged in but 'is_active' is 0, force logout
+        if (Auth::check() && !Auth::user()->is_active) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors(['email' => 'Your account is no longer active.']);
+        }
+
         return $next($request);
     }
 }

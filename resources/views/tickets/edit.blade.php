@@ -61,16 +61,6 @@
                                 <option value="High" {{ $ticket->priority == 'High' ? 'selected' : '' }}>High</option>
                             </select>
                         </div>
-
-                        <div>
-                            <label class="block font-medium text-sm text-gray-700 mb-1">Status</label>
-                            <select name="status" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block w-full bg-gray-50">
-                                <option value="Open" {{ $ticket->status == 'Open' ? 'selected' : '' }}>Open</option>
-                                <option value="Assigned" {{ $ticket->status == 'Assigned' ? 'selected' : '' }}>Assigned</option>
-                                <option value="On Hold" {{ $ticket->status == 'On Hold' ? 'selected' : '' }}>On Hold</option>
-                                <option value="Resolved" {{ $ticket->status == 'Resolved' ? 'selected' : '' }}>Resolved</option>
-                            </select>
-                        </div>
                     </div>
 
                     <div class="flex items-center gap-4 border-t border-gray-100 pt-4">

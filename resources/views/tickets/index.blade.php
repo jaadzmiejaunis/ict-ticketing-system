@@ -6,7 +6,7 @@
                 <h1 class="text-2xl font-bold text-white">Ticket Management</h1>
 
                 <div class="flex gap-3">
-                    @if(request('filter') || request('search') || request('status'))
+                    @if(request('filter') || request('search') || request('status') || request('priority'))
                         <a href="{{ route('tickets.index') }}"
                            class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded-md font-bold transition shadow-lg flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
@@ -30,6 +30,10 @@
 
             <div class="bg-white p-4 rounded-lg shadow-sm mb-8">
                 <form action="{{ route('tickets.index') }}" method="GET" class="flex flex-wrap md:flex-nowrap gap-4">
+                    @if(request('filter'))
+                        <input type="hidden" name="filter" value="{{ request('filter') }}">
+                    @endif
+
                     <div class="flex-grow">
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Search Keywords</label>
                         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, issue, or description..." class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -88,7 +92,7 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse($tickets as $ticket)
-                                <tr class="group transition {{ $ticket->priority === 'High' ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-gray-50' }}">
+                                <tr class="group hover:bg-gray-50 transition border-b border-gray-100">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{{ $ticket->id }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $ticket->reporter_name }}</td>
 
@@ -98,7 +102,7 @@
                                                 {{ $ticket->title }}
                                             </a>
 
-                                            <div class="hidden group-hover:block transition-all duration-200 mt-0.5">
+                                            <div class="mt-1">
                                                 @if($ticket->status === 'Resolved' && $ticket->resolved_by)
                                                     <span class="text-[10px] text-gray-500 font-bold">
                                                         Resolved by {{ $ticket->resolver->name ?? 'Staff' }}
@@ -106,8 +110,11 @@
                                                 @elseif($ticket->assigned_to)
                                                     <span class="text-[10px] text-indigo-600 font-bold">
                                                         Assigned to {{ $ticket->assignee->name }}
+
                                                         @if($ticket->assigned_by)
-                                                            <span class="text-gray-400 font-normal italic">(by {{ $ticket->assigner->name ?? 'System' }})</span>
+                                                            <span class="text-gray-400 font-normal italic opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                                (by {{ $ticket->assigner->name ?? 'System' }})
+                                                            </span>
                                                         @endif
                                                     </span>
                                                 @else
@@ -134,12 +141,22 @@
                                             {{ $ticket->status }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold flex gap-3">
-                                        <a href="{{ route('tickets.edit', $ticket) }}" class="text-indigo-600 hover:text-indigo-900 font-bold transition">Edit</a>
-                                        <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Delete this ticket?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900 font-bold transition">Delete</button>
-                                        </form>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold">
+                                        <div class="flex items-center gap-2">
+                                            <a href="{{ route('tickets.edit', $ticket) }}"
+                                            class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-sm">
+                                                Edit
+                                            </a>
+
+                                            <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this ticket?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="inline-flex items-center px-3 py-1.5 bg-red-600 border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-sm">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
