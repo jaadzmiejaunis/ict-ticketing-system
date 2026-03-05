@@ -10,21 +10,35 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Security check: Kick out non-admins
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Unauthorized access.');
+        $query = User::query();
+
+        // 1. Apply Search Filter
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                ->orWhere('email', 'like', '%' . $request->search . '%');
+            });
         }
 
-        // Get ONLY ACTIVE staff and admin members
-        $staffMembers = User::where('role', 'staff')->where('is_active', true)->get();
-        $adminMembers = User::where('role', 'admin')->where('is_active', true)->get();
+        // 2. Apply Role Filter
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
 
-        // Get the latest 50 login logs
-        $logs = UserLog::with('user')->latest('login_at')->take(50)->get();
+        // 3. Apply Sorting Logic
+        $sort = $request->get('sort', 'recent');
+        if ($sort === 'oldest') {
+            $query->orderBy('created_at', 'asc');
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
 
-        return view('admin.dashboard', compact('staffMembers', 'adminMembers', 'logs'));
+        $activeUsers = (clone $query)->where('is_active', 1)->paginate(10)->withQueryString();
+        $inactiveUsers = (clone $query)->where('is_active', 0)->paginate(10)->withQueryString();
+
+        return view('admin.accounts.index', compact('activeUsers', 'inactiveUsers'));
     }
 
     // Add a new staff member
@@ -72,43 +86,53 @@ class AdminController extends Controller
             abort(403);
         }
 
-        // Capture search and filter inputs from the URL
+        // 1. Capture search, filter, and sort inputs
         $search = $request->input('search');
         $roleFilter = $request->input('role');
+        $sort = $request->get('sort', 'recent'); // Matches your "Sort By" dropdown
 
-        // Build the query for Active Users
         $activeQuery = User::where('is_active', true);
-
-        // Build the query for Inactive Users
         $inactiveQuery = User::where('is_active', false);
 
-        // Apply Search Filter (Name or Email)
+        // 2. Apply Search Filter
         if ($search) {
             $activeQuery->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
             });
-
             $inactiveQuery->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        // Apply Role Filter
+        // 3. Apply Role Filter
         if ($roleFilter) {
             $activeQuery->where('role', $roleFilter);
             $inactiveQuery->where('role', $roleFilter);
         }
 
-        // Execute queries: Sort by role category first, then alphabetically by name
-        $activeUsers = $activeQuery->orderBy('role')->orderBy('name')
-            ->paginate(10, ['*'], 'active_page')
-            ->withQueryString(); // Keeps search terms in URL when clicking "Next Page"
+        // 4. UPDATED: Multi-option Sorting Logic
+        switch ($sort) {
+            case 'oldest':
+                $activeQuery->orderBy('created_at', 'asc');
+                $inactiveQuery->orderBy('created_at', 'asc');
+                break;
+            case 'az': // Alphabetical A-Z
+                $activeQuery->orderBy('name', 'asc');
+                $inactiveQuery->orderBy('name', 'asc');
+                break;
+            case 'za': // Alphabetical Z-A
+                $activeQuery->orderBy('name', 'desc');
+                $inactiveQuery->orderBy('name', 'desc');
+                break;
+            default: // Defaults to 'recent' (Newest First)
+                $activeQuery->orderBy('created_at', 'desc');
+                $inactiveQuery->orderBy('created_at', 'desc');
+                break;
+        }
 
-        $inactiveUsers = $inactiveQuery->orderBy('role')->orderBy('name')
-            ->paginate(10, ['*'], 'inactive_page')
-            ->withQueryString();
+        // 5. Execute with dual-pagination
+        $activeUsers = $activeQuery->paginate(10, ['*'], 'active_page')->withQueryString();
+        $inactiveUsers = $inactiveQuery->paginate(10, ['*'], 'inactive_page')->withQueryString();
 
         return view('admin.accounts.index', compact('activeUsers', 'inactiveUsers'));
     }
@@ -166,9 +190,17 @@ class AdminController extends Controller
             return back()->withErrors(['error' => 'You cannot deactivate your own account!']);
         }
 
-        // Flip the status (if true, make false. If false, make true)
+        // Flip the status boolean
         $user->update([
             'is_active' => !$user->is_active
+        ]);
+
+        // NEW: Log the status change
+        \App\Models\UserStatusLog::create([
+            'user_id' => $user->id,
+            'admin_id' => Auth::id(), // Record which admin performed the action
+            'new_status' => $user->is_active, // Stores 0 or 1
+            'reason' => request('reason', 'System status toggle'),
         ]);
 
         $status = $user->is_active ? 'activated' : 'deactivated';
@@ -178,17 +210,88 @@ class AdminController extends Controller
     // 5. Permanently Delete a User
     public function deleteAccount(User $user)
     {
+        // 1. Mandatory Security Check: Prevents self-deletion at the server level
+        if (Auth::id() === $user->id) {
+            return back()->withErrors(['error' => 'Security Violation: You cannot delete your own account.']);
+        }
+
+        // 2. Log details into the permanent Audit Trail
+        \App\Models\UserDeleteLog::create([
+            'user_name' => $user->name,
+            'user_email' => $user->email,
+            'admin_id' => Auth::id(),
+            'reason' => request('reason') // Captured from the JS prompt box
+        ]);
+
+        // 3. Final Destruction
+        $user->delete();
+
+        return back()->with('success', 'User permanently removed and deletion reason logged.');
+    }
+
+    //Check deactivated staff account.
+    public function history(User $user)
+    {
+        // Fetches logs for the specific user and includes the Admin's name
+        $logs = \App\Models\UserStatusLog::with('admin')
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        return response()->json($logs);
+    }
+
+    public function deletionHistory()
+    {
+        // Fetches the permanent deletion records, newest first
+        $logs = \App\Models\UserDeleteLog::with('admin')->latest()->paginate(15);
+
+        return view('admin.accounts.deletions', compact('logs'));
+    }
+
+    // Fetch Staff Performance Statistics
+    public function performance(User $user)
+    {
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
-        // Security Check: Prevent the admin from deleting themselves
-        if ($user->id === Auth::id()) {
-            return back()->withErrors(['error' => 'You cannot delete your own account!']);
-        }
+        // 1. Fetch all tickets assigned to this specific user
+        // IMPORTANT: Verify '\App\Models\Ticket' and 'assigned_to' match your database
+        $tickets = \App\Models\Ticket::where('assigned_to', $user->id)->get();
 
-        $user->delete();
+        // 2. Calculate Top Cards
+        $totalAssigned = $tickets->count();
+        $resolvedCount = $tickets->where('status', 'Resolved')->count();
+        $pendingCount = $tickets->whereIn('status', ['Open', 'Assigned', 'On Hold'])->count();
 
-        return back()->with('success', 'User account permanently deleted.');
+        // 3. Prepare data for the Visual Graphics (Charts)
+        $chartData = [
+            'status' => [
+                'Open' => $tickets->where('status', 'Open')->count(),
+                'Assigned' => $tickets->where('status', 'Assigned')->count(),
+                'On Hold' => $tickets->where('status', 'On Hold')->count(),
+                'Resolved' => $resolvedCount,
+            ],
+            'categories' => [
+                'Hardware' => $tickets->where('category', 'Hardware')->count(),
+                'Software' => $tickets->where('category', 'Software')->count(),
+                'Network' => $tickets->where('category', 'Network')->count(),
+            ],
+            'priorities' => [
+                'High' => $tickets->where('priority', 'High')->count(),
+                'Medium' => $tickets->where('priority', 'Medium')->count(),
+                'Low' => $tickets->where('priority', 'Low')->count(),
+            ]
+        ];
+
+        // 4. Get recent tasks
+        $recentTasks = \App\Models\Ticket::where('assigned_to', $user->id)
+                            ->where('status', 'Resolved')
+                            ->latest('updated_at')
+                            ->take(5)
+                            ->get();
+
+        return view('admin.accounts.performance', compact('user', 'totalAssigned', 'resolvedCount', 'pendingCount', 'recentTasks', 'chartData'));
     }
 }

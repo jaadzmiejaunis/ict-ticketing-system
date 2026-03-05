@@ -55,4 +55,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Ticket::class);
     }
+
+    public function statusLogs()
+    {
+        // This lets us pull all logs for a specific user, newest first
+        return $this->hasMany(UserStatusLog::class)->latest();
+    }
 }

@@ -25,7 +25,7 @@ class TicketController extends Controller
 
         // 3. FIXED: Handle Assigned by Me
         if ($request->get('filter') === 'assigned_by_me') {
-            $query->where('assigned_by', \Illuminate\Support\Facades\Auth::id());
+            $query->where('assigned_to', \Illuminate\Support\Facades\Auth::id());
         }
 
         // 4. Handle Search Keywords
@@ -164,7 +164,6 @@ class TicketController extends Controller
             'open'      => $monthlyTickets->where('status', 'Open')->count(),
             'resolved'  => $monthlyTickets->where('status', 'Resolved')->count(),
             'high'      => $monthlyTickets->where('priority', 'High')->count(),
-            // We can add more specific lists if you want
         ];
 
         // 2. Load the View into the PDF generator
@@ -185,6 +184,8 @@ class TicketController extends Controller
             // Color Logic: Red for High Priority, Blue for others
             $color = '#3b82f6';
             if ($ticket->priority === 'High') $color = '#ef4444';
+            if ($ticket->priority === 'Medium') $color = '#FF8B5A';
+            if ($ticket->priority === 'Low') $color = '#3b82f6';
             if ($ticket->status === 'Resolved') $color = '#9ca3af';
 
             return [

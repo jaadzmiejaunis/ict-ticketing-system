@@ -34,6 +34,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/admin/accounts/{user}', [AdminController::class, 'updateAccount'])->name('admin.accounts.update');
     Route::patch('/admin/accounts/{user}/toggle', [AdminController::class, 'toggleStatus'])->name('admin.accounts.toggle');
     Route::delete('/admin/accounts/{user}', [AdminController::class, 'deleteAccount'])->name('admin.accounts.delete');
+    Route::get('/admin/accounts/{user}/history', [AdminController::class, 'history'])->name('admin.accounts.history');
+    Route::get('/admin/accounts/deletion-history', [AdminController::class, 'deletionHistory'])->name('admin.accounts.deletions');
+    Route::get('/admin/accounts/{user}/performance', [AdminController::class, 'performance'])->name('admin.accounts.performance');
 
     // Ticket Management
     Route::resource('tickets', TicketController::class);
@@ -44,6 +47,8 @@ Route::middleware('auth')->group(function () {
     // Task Resolution: Use POST to avoid MethodNotAllowed errors
     Route::post('/tickets/{ticket}/resolve', [TicketController::class, 'resolveTask'])->name('tickets.resolve');
     Route::post('/tickets/{ticket}/undo-resolve', [TicketController::class, 'undoResolve'])->name('tickets.undo-resolve');
+
+    Route::get('/my-performance', [ProfileController::class, 'myPerformance'])->name('my.performance');
 });
 
 // User Session Management
