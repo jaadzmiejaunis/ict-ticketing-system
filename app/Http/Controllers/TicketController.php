@@ -23,9 +23,13 @@ class TicketController extends Controller
             $query->where('status', $request->status);
         }
 
-        // 3. FIXED: Handle Assigned by Me
+        // 3. Handle Filters (Assigned to Me vs My Created Tickets)
         if ($request->get('filter') === 'assigned_by_me') {
-            $query->where('assigned_to', \Illuminate\Support\Facades\Auth::id());
+            // Tickets currently assigned to you for work
+            $query->where('assigned_to', Auth::id());
+        } elseif ($request->get('filter') === 'owned') {
+            // Tickets you personally logged in the system
+            $query->where('user_id', Auth::id());
         }
 
         // 4. Handle Search Keywords
@@ -41,8 +45,13 @@ class TicketController extends Controller
         $sort = $request->get('sort', 'id_desc');
         $query->orderBy('id', $sort === 'id_asc' ? 'asc' : 'desc');
 
+        // Final result with relationships and pagination
         $tickets = $query->with(['assignee', 'assigner', 'resolver'])->paginate(10);
-        return view('tickets.index', compact('tickets'));
+
+        // Fetch users for any dropdowns you might have on the index page
+        $users = \App\Models\User::all();
+
+        return view('tickets.index', compact('tickets', 'users'));
     }
 
     public function create()
@@ -62,10 +71,17 @@ class TicketController extends Controller
             'due_date'      => 'nullable|date',
         ]);
 
-        // FIX: Use the Auth facade to get the ID
         $validated['user_id'] = Auth::id();
+        $ticket = Ticket::create($validated);
 
-        Ticket::create($validated);
+        // Save to a "Recent Created" session list
+        $recent = session()->get('recent_created', []);
+        array_unshift($recent, [
+            'id' => $ticket->id,
+            'title' => $ticket->title,
+            'date' => now()->format('d M, h:i A')
+        ]);
+        session()->put('recent_created', array_slice($recent, 0, 3)); // Keep only the last 3
 
         return redirect()->route('tickets.index')->with('success', 'Ticket created successfully.');
     }
@@ -81,34 +97,36 @@ class TicketController extends Controller
     // Show the form to edit an existing ticket
     public function edit(Ticket $ticket)
     {
-        return view('tickets.edit', compact('ticket'));
+        // Block unauthorized edits
+        if (Auth::user()->role !== 'admin' && Auth::id() !== $ticket->user_id) {
+            return redirect()->route('tickets.index')->with('error', 'Unauthorized access.');
+        }
+
+        $users = \App\Models\User::all();
+        return view('tickets.edit', compact('ticket', 'users'));
     }
 
     // Update the ticket in the database
     public function update(Request $request, Ticket $ticket)
     {
-        $validated = $request->validate([
-            'reporter_name' => 'required|string|max:255',
-            'title'         => 'required|string|max:255',
-            'description'   => 'required|string',
-            'priority'      => 'required|in:Low,Medium,High',
-            'category'      => 'required|in:Hardware,Software,Network',
-            'status'        => 'required|string',
-            'due_date'      => 'nullable|date',
-        ]);
+        // Permission check...
+        $ticket->update($request->all());
 
-        // Ensure status is updated properly (important for the "On Hold" button)
-        $ticket->update($validated);
-
+        // Send the message here
         return redirect()->route('tickets.show', $ticket)
-                     ->with('success', 'Ticket status updated to On Hold.');
+            ->with('success', 'Ticket #' . $ticket->id . ' has been updated successfully!');
     }
 
-    // Delete the ticket
+    //Delete the ticket in the database
     public function destroy(Ticket $ticket)
     {
+        // Permission check...
+        $ticketId = $ticket->id;
         $ticket->delete();
-        return redirect()->route('tickets.index')->with('success', 'Ticket deleted successfully!');
+
+        // Send the message here
+        return redirect()->route('tickets.index')
+            ->with('success', 'Ticket #' . $ticketId . ' has been trashed.');
     }
 
     public function statistics(\Illuminate\Http\Request $request)
@@ -272,5 +290,70 @@ class TicketController extends Controller
         ]);
 
         return back()->with('success', 'Resolution undone. Ticket is now active again.');
+    }
+    //Trash ticket
+    // 1. Search and Sort the Recycle Bin
+    public function trash(Request $request)
+    {
+        $user = Auth::user();
+        $query = Ticket::onlyTrashed();
+
+        // Restricted View: Staff only see their own trash
+        if ($user->role !== 'admin') {
+            $query->where('user_id', $user->id);
+        }
+
+        // Handle Search inside Trash
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('title', 'like', '%' . $request->search . '%')
+                ->orWhere('reporter_name', 'like', '%' . $request->search . '%')
+                ->orWhere('id', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // Handle Sorting (Latest Deleted first by default)
+        $sort = $request->get('sort', 'deleted_desc');
+        if ($sort === 'deleted_asc') {
+            $query->orderBy('deleted_at', 'asc');
+        } else {
+            $query->orderBy('deleted_at', 'desc');
+        }
+
+        $deletedTickets = $query->paginate(10);
+        return view('tickets.deleted', compact('deletedTickets'));
+    }
+
+    // 2. Permanent Delete (Admin Only)
+    public function forceDelete($id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403);
+        }
+
+        $ticket = Ticket::withTrashed()->findOrFail($id);
+        $ticketTitle = $ticket->title; // Save name before it's gone
+
+        // Save to a "Recent Purges" session list
+        $purged = session()->get('recent_purges', []);
+        array_unshift($purged, ['id' => $id, 'title' => $ticketTitle, 'date' => now()->format('d M, h:i A')]);
+        session()->put('recent_purges', array_slice($purged, 0, 3)); // Keep only the last 3
+
+        $ticket->forceDelete();
+
+        return back()->with('success', "Ticket #$id has been permanently erased from the system.");
+    }
+    //Restore ticket
+    public function restore($id)
+    {
+        $ticket = Ticket::withTrashed()->findOrFail($id);
+
+        // Permission check
+        if (Auth::user()->role !== 'admin' && Auth::id() !== $ticket->user_id) {
+            return redirect()->back()->with('error', 'Unauthorized.');
+        }
+
+        $ticket->restore();
+        return redirect()->route('tickets.index')->with('success', 'Ticket restored successfully!');
     }
 }

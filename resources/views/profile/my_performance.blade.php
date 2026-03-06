@@ -1,12 +1,14 @@
 <x-app-layout>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <div class="py-6 bg-[#111827] min-h-screen">
+    <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold text-white uppercase tracking-tight">Personal Performance Profile</h2>
-                <p class="text-gray-400 text-sm">Official metrics for your assigned tasks</p>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Personal Performance Profile</h2>
+                    <p class="text-gray-400 text-sm italic">Official metrics for your assigned tasks</p>
+                </div>
             </div>
 
             <div class="bg-white p-6 rounded-lg shadow-sm mb-6 flex justify-between items-center border border-gray-200">
@@ -14,8 +16,8 @@
                     <h3 class="text-xl font-bold text-gray-900">{{ $user->name }}</h3>
                     <p class="text-gray-500 text-sm">{{ $user->email }} • Joined {{ $user->created_at->format('d M Y') }}</p>
                 </div>
-                <span class="px-3 py-1 text-xs font-bold rounded-full {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
-                    {{ ucfirst($user->role) }}
+                <span class="px-3 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-800 uppercase shadow-sm">
+                    {{ $user->role }}
                 </span>
             </div>
 
@@ -34,45 +36,39 @@
                 </div>
             </div>
 
-            <div class="space-y-6 mb-6">
-                <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-                    <h4 class="text-center font-bold text-gray-700 mb-8 uppercase text-xs tracking-widest">Resolution Status</h4>
-                    <div class="h-80 w-full relative flex justify-center">
-                        <canvas id="statusChart"></canvas>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h4 class="text-center font-bold text-gray-700 mb-4 uppercase text-xs tracking-wider">Resolution Status</h4>
+                    <div class="h-64"><canvas id="statusChart"></canvas></div>
                 </div>
 
-                <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-                    <h4 class="text-center font-bold text-gray-700 mb-8 uppercase text-xs tracking-widest">Issue Categories</h4>
-                    <div class="h-64 w-full relative">
-                        <canvas id="categoryChart"></canvas>
-                    </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h4 class="text-center font-bold text-gray-700 mb-4 uppercase text-xs tracking-wider">Issue Categories</h4>
+                    <div class="h-64"><canvas id="categoryChart"></canvas></div>
                 </div>
 
-                <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-                    <h4 class="text-center font-bold text-gray-700 mb-8 uppercase text-xs tracking-widest">Priority Levels</h4>
-                    <div class="h-80 w-full relative flex justify-center">
-                        <canvas id="priorityChart"></canvas>
-                    </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h4 class="text-center font-bold text-gray-700 mb-4 uppercase text-xs tracking-wider">Priority Levels</h4>
+                    <div class="h-64"><canvas id="priorityChart"></canvas></div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                     <h3 class="font-bold text-gray-800 text-sm uppercase tracking-tight">Recently Resolved Activity</h3>
                 </div>
-                <table class="min-w-full text-sm text-left">
+                <table class="min-w-full text-sm text-left border-collapse">
                     <thead class="bg-white border-b border-gray-200">
                         <tr>
                             <th class="px-6 py-3 font-bold text-gray-400 uppercase text-[10px] tracking-wider">Ticket Details</th>
                             <th class="px-6 py-3 font-bold text-gray-400 uppercase text-[10px] tracking-wider text-right">Date Resolved</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 font-medium">
+                    <tbody class="divide-y divide-gray-100 font-medium text-gray-900">
                         @forelse($recentTasks as $task)
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="px-6 py-4">
-                                    <div class="font-bold text-gray-900">#{{ $task->id }} - {{ $task->title ?? 'Untitled Ticket' }}</div>
+                                    <div class="font-bold">#{{ $task->id }} - {{ $task->title ?? 'Untitled Ticket' }}</div>
                                     <div class="text-[10px] text-gray-500 mt-1 uppercase tracking-wide">Category: {{ $task->category }} | Priority: {{ $task->priority }}</div>
                                 </td>
                                 <td class="px-6 py-4 text-right text-gray-600 font-bold text-xs uppercase">
@@ -80,7 +76,9 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="2" class="px-6 py-10 text-center text-gray-400 italic">No recently resolved tasks recorded.</td></tr>
+                            <tr>
+                                <td colspan="2" class="px-6 py-10 text-center text-gray-400 italic font-medium">No recently resolved tasks recorded.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -90,72 +88,43 @@
     </div>
 
     <script>
-        window.onload = function() {
-            const chartData = @json($chartData);
+        const chartData = @json($chartData);
 
-            const options = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, padding: 25, font: { weight: 'bold', size: 11 } }
-                    }
-                }
-            };
+        new Chart(document.getElementById('statusChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Open', 'Assigned', 'On Hold', 'Resolved'],
+                datasets: [{
+                    data: [chartData.status['Open'], chartData.status['Assigned'], chartData.status['On Hold'], chartData.status['Resolved']],
+                    backgroundColor: ['#22c55e', '#3b82f6', '#eab308', '#9ca3af']
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
 
-            // Status Chart (Pie)
-            const ctxStatus = document.getElementById('statusChart').getContext('2d');
-            new Chart(ctxStatus, {
-                type: 'pie',
-                data: {
-                    labels: ['Open', 'Assigned', 'On Hold', 'Resolved'],
-                    datasets: [{
-                        data: [chartData.status.Open, chartData.status.Assigned, chartData.status.On Hold, chartData.status.Resolved],
-                        backgroundColor: ['#2ecc71', '#3498db', '#f1c40f', '#95a5a6'],
-                        borderWidth: 0
-                    }]
-                },
-                options: options
-            });
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Hardware', 'Software', 'Network'],
+                datasets: [{
+                    label: 'Tickets',
+                    data: [chartData.categories['Hardware'], chartData.categories['Software'], chartData.categories['Network']],
+                    backgroundColor: ['#ef4444', '#3b82f6', '#eab308']
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
 
-            // Category Chart (Bar)
-            const ctxCategory = document.getElementById('categoryChart').getContext('2d');
-            new Chart(ctxCategory, {
-                type: 'bar',
-                data: {
-                    labels: ['Hardware', 'Software', 'Network'],
-                    datasets: [{
-                        data: [chartData.categories.Hardware, chartData.categories.Software, chartData.categories.Network],
-                        backgroundColor: ['#e74c3c', '#3498db', '#f1c40f'],
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    ...options,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-
-            // Priority Chart (Doughnut)
-            const ctxPriority = document.getElementById('priorityChart').getContext('2d');
-            new Chart(ctxPriority, {
-                type: 'doughnut',
-                data: {
-                    labels: ['High', 'Medium', 'Low'],
-                    datasets: [{
-                        data: [chartData.priorities.High, chartData.priorities.Medium, chartData.priorities.Low],
-                        backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71'],
-                        borderWidth: 0,
-                        cutout: '75%'
-                    }]
-                },
-                options: options
-            });
-        };
+        new Chart(document.getElementById('priorityChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['High', 'Medium', 'Low'],
+                datasets: [{
+                    data: [chartData.priorities['High'], chartData.priorities['Medium'], chartData.priorities['Low']],
+                    backgroundColor: ['#ef4444', '#f59e0b', '#22c55e']
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+        });
     </script>
 </x-app-layout>

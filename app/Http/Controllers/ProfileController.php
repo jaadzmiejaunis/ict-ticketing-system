@@ -13,13 +13,13 @@ use App\Models\Ticket;
 class ProfileController extends Controller
 {
     /**
-     * Display the user's personal performance dashboard.
+     * Display the user's personal performance profile.
      */
     public function myPerformance(): View
     {
-        $user = Auth::user();
+        $user = Auth::user(); // Get the current staff member
 
-        // 1. Fetch tickets assigned to the logged-in user
+        // 1. Fetch tickets assigned to you using the correct DB column
         $tickets = Ticket::where('assigned_to', $user->id)->get();
 
         // 2. Calculate Metric Cards
@@ -27,7 +27,7 @@ class ProfileController extends Controller
         $resolvedCount = $tickets->where('status', 'Resolved')->count();
         $pendingCount = $tickets->whereIn('status', ['Open', 'Assigned', 'On Hold'])->count();
 
-        // 3. Prepare Chart Data
+        // 3. Prepare Chart Data using exact DB Enum values
         $chartData = [
             'status' => [
                 'Open' => $tickets->where('status', 'Open')->count(),
@@ -47,7 +47,7 @@ class ProfileController extends Controller
             ]
         ];
 
-        // 4. Get the 5 most recently resolved tasks
+        // 4. Get the 5 most recently resolved tasks for the table
         $recentTasks = Ticket::where('assigned_to', $user->id)
             ->where('status', 'Resolved')
             ->latest('updated_at')
@@ -59,6 +59,9 @@ class ProfileController extends Controller
         ));
     }
 
+    /**
+     * Display the user's profile form.
+     */
     public function edit(Request $request): View
     {
         return view('profile.edit', [
@@ -66,6 +69,9 @@ class ProfileController extends Controller
         ]);
     }
 
+    /**
+     * Update the user's profile information.
+     */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $request->user()->fill($request->validated());
@@ -79,6 +85,9 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
+    /**
+     * Delete the user's account.
+     */
     public function destroy(Request $request): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [

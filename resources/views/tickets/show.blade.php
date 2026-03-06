@@ -13,6 +13,9 @@
                             Reported by <span class="font-medium text-gray-800">{{ $ticket->reporter_name }}</span>
                             on {{ $ticket->created_at->format('d M Y, h:i A') }}
                         </p>
+                        <p class="text-[11px] text-gray-400 mt-0.5 italic">
+                            Logged in system by: <span class="font-semibold">{{ $ticket->user->name ?? 'System' }}</span>
+                        </p>
                     </div>
                     <div class="flex gap-2">
                         <span class="px-3 py-1 rounded-full text-sm font-semibold
@@ -49,10 +52,14 @@
 
                     <div class="mb-6 pb-4 border-b border-gray-100 space-y-2">
                         @if($ticket->status === 'Resolved')
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full bg-blue-600"></div>
-                                <p class="text-blue-600 font-bold">Task Resolved By:
-                                    <span class="text-gray-900">{{ $ticket->resolver->name ?? 'System Staff' }}</span>
+                            <div class="flex flex-col gap-0.5"> <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+                                    <p class="text-blue-600 font-bold">Task Resolved By:
+                                        <span class="text-gray-900">{{ $ticket->resolver->name ?? 'System Staff' }}</span>
+                                    </p>
+                                </div>
+                                <p class="text-[11px] text-gray-500 ml-4 italic font-medium">
+                                    Resolved on: {{ $ticket->updated_at->format('d M Y, h:i A') }}
                                 </p>
                             </div>
                         @elseif($ticket->assigned_to)
@@ -154,16 +161,23 @@
                 </div>
 
                     <div class="flex items-center gap-4 mt-8 pt-6 border-t border-gray-100">
-                        <a href="{{ route('tickets.edit', $ticket) }}" class="bg-indigo-600 text-white px-5 py-2 rounded-md hover:bg-indigo-700 font-bold transition shadow-sm">
-                            Edit Ticket
-                        </a>
+                        @if(Auth::user()->role === 'admin' || Auth::id() === $ticket->user_id)
+                            <a href="{{ route('tickets.edit', $ticket) }}"
+                            class="bg-indigo-600 text-white px-6 py-2.5 rounded-md hover:bg-indigo-700 font-bold transition shadow-md text-sm uppercase tracking-wider">
+                                Edit Ticket
+                            </a>
 
-                        <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Delete this ticket?');">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="bg-red-50 text-red-600 px-5 py-2 rounded-md hover:bg-red-100 border border-red-200 font-bold transition shadow-sm">
-                                Delete
-                            </button>
-                        </form>
+                            <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Move this ticket to the Recycle Bin?');">
+                                @csrf @method('DELETE')
+                                <button type="submit"
+                                        class="bg-red-600 text-white px-6 py-2.5 rounded-md hover:bg-red-700 font-bold transition shadow-md text-sm uppercase tracking-wider flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    Trash
+                                </button>
+                            </form>
+                        @endif
 
                         <a href="{{ route('tickets.index') }}" class="ml-auto text-gray-500 hover:text-gray-900 font-bold transition flex items-center gap-1">
                             &larr; Back to Dashboard

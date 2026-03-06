@@ -39,16 +39,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/accounts/{user}/performance', [AdminController::class, 'performance'])->name('admin.accounts.performance');
 
     // Ticket Management
+    Route::get('/tickets/trash', [TicketController::class, 'trash'])->name('tickets.trash');
+    Route::post('/tickets/{id}/restore', [TicketController::class, 'restore'])->name('tickets.restore');
+    Route::delete('/tickets/{id}/force-delete', [TicketController::class, 'forceDelete'])->name('tickets.force-delete');
+
     Route::resource('tickets', TicketController::class);
     Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assignTask'])->name('tickets.assign');
     Route::post('/tickets/{ticket}/unassign', [TicketController::class, 'unassignTask'])->name('tickets.unassign');
     Route::post('/tickets/{ticket}/transfer', [TicketController::class, 'transferTask'])->name('tickets.transfer');
+    Route::get('/tickets/trash', [TicketController::class, 'trash'])->name('tickets.trash');
+    Route::post('/tickets/{id}/restore', [TicketController::class, 'restore'])->name('tickets.restore');
 
     // Task Resolution: Use POST to avoid MethodNotAllowed errors
     Route::post('/tickets/{ticket}/resolve', [TicketController::class, 'resolveTask'])->name('tickets.resolve');
     Route::post('/tickets/{ticket}/undo-resolve', [TicketController::class, 'undoResolve'])->name('tickets.undo-resolve');
 
     Route::get('/my-performance', [ProfileController::class, 'myPerformance'])->name('my.performance');
+
+
 });
 
 // User Session Management

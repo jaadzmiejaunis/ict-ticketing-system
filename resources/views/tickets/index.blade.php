@@ -2,31 +2,88 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
                 <h1 class="text-2xl font-bold text-white">Ticket Management</h1>
 
-                <div class="flex gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     @if(request('filter') || request('search') || request('status') || request('priority'))
                         <a href="{{ route('tickets.index') }}"
-                           class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded-md font-bold transition shadow-lg flex items-center gap-2">
+                           class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded-md font-bold transition shadow-md text-sm uppercase flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
-                            Show All Tickets
+                            Show All
                         </a>
                     @endif
 
-                    <a href="{{ route('tickets.index', ['filter' => 'assigned_by_me']) }}"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md font-bold transition shadow-lg flex items-center gap-2">
+                    <a href="{{ route('tickets.index', ['filter' => 'owned']) }}"
+                       class="{{ request('filter') === 'owned' ? 'bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700' }} text-white px-5 py-2.5 rounded-md font-bold transition shadow-md text-sm uppercase flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        Assigned by Me
+                        My Tickets
+                    </a>
+
+                    <a href="{{ route('tickets.index', ['filter' => 'assigned_by_me']) }}"
+                       class="{{ request('filter') === 'assigned_by_me' ? 'bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700' }} text-white px-5 py-2.5 rounded-md font-bold transition shadow-md text-sm uppercase flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        Assigned To Me
+                    </a>
+
+                    @php
+                        $trashCount = \App\Models\Ticket::onlyTrashed()
+                            ->when(Auth::user()->role !== 'admin', function($query) {
+                                return $query->where('user_id', Auth::id());
+                            })->count();
+                    @endphp
+                    <a href="{{ route('tickets.trash') }}"
+                       class="relative bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded-md font-bold transition shadow-md text-sm uppercase flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Trash
+                        @if($trashCount > 0)
+                            <span class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] text-white shadow-md border-2 border-white">
+                                {{ $trashCount }}
+                            </span>
+                        @endif
                     </a>
 
                     <a href="{{ route('tickets.create') }}"
-                       class="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-md font-bold transition shadow-lg flex items-center gap-2">
+                       class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-md font-bold transition shadow-md text-sm uppercase flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        New Ticket
+                        Create Ticket
                     </a>
                 </div>
             </div>
+
+            @if(session('success'))
+                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
+                     class="mb-6 flex items-center justify-between p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg shadow-sm">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        <p class="text-sm font-bold text-green-800 uppercase tracking-wide">{{ session('success') }}</p>
+                    </div>
+                    <button @click="show = false" class="text-green-500 hover:text-green-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            @endif
+
+            @if(session('recent_created'))
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8 border border-gray-100">
+                    <h3 class="text-indigo-600 font-bold text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Recently Created Tickets (Your Last 3)
+                    </h3>
+                    <div class="space-y-3">
+                        @foreach(session('recent_created') as $recent)
+                            <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100 transition hover:bg-gray-100">
+                                <span class="text-sm text-gray-700 font-medium">
+                                    #{{ $recent['id'] }} - <span class="font-bold text-gray-900">{{ $recent['title'] }}</span>
+                                </span>
+                                <span class="text-[10px] text-gray-500 font-bold uppercase italic">Created on {{ $recent['date'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
             <div class="bg-white p-4 rounded-lg shadow-sm mb-8">
                 <form action="{{ route('tickets.index') }}" method="GET" class="flex flex-wrap md:flex-nowrap gap-4">
@@ -36,7 +93,7 @@
 
                     <div class="flex-grow">
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Search Keywords</label>
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, issue, or description..." class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search ID, Name or Issue..." class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
 
                     <div class="w-full md:w-48">
@@ -61,15 +118,15 @@
                     </div>
 
                     <div class="w-full md:w-48">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sort By</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sort ID</label>
                         <select name="sort" class="w-full border-gray-300 rounded-md shadow-sm">
-                            <option value="id_desc" {{ request('sort') == 'id_desc' ? 'selected' : '' }}>Newest (ID)</option>
-                            <option value="id_asc" {{ request('sort') == 'id_asc' ? 'selected' : '' }}>Oldest (ID)</option>
+                            <option value="id_desc" {{ request('sort') == 'id_desc' ? 'selected' : '' }}>Newest</option>
+                            <option value="id_asc" {{ request('sort') == 'id_asc' ? 'selected' : '' }}>Oldest</option>
                         </select>
                     </div>
 
                     <div class="flex items-end">
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-bold transition">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-bold transition h-[42px]">
                             Search
                         </button>
                     </div>
@@ -80,89 +137,73 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Complainant</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Issue</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Priority</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                            <tr class="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <th class="px-6 py-4 text-left">ID</th>
+                                <th class="px-6 py-4 text-left">Complainant</th>
+                                <th class="px-6 py-4 text-left">Issue</th>
+                                <th class="px-6 py-4 text-left">Category</th>
+                                <th class="px-6 py-4 text-left">Priority</th>
+                                <th class="px-6 py-4 text-left">Status</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse($tickets as $ticket)
-                                <tr class="group hover:bg-gray-50 transition border-b border-gray-100">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{{ $ticket->id }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $ticket->reporter_name }}</td>
-
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <tr class="group hover:bg-gray-50 transition">
+                                    <td class="px-6 py-4 text-sm text-gray-500">#{{ $ticket->id }}</td>
+                                    <td class="px-6 py-4 text-sm font-bold text-gray-900">{{ $ticket->reporter_name }}</td>
+                                    <td class="px-6 py-4">
                                         <div class="flex flex-col">
-                                            <a href="{{ route('tickets.show', $ticket) }}" class="text-blue-600 font-semibold hover:underline">
-                                                {{ $ticket->title }}
-                                            </a>
-
-                                            <div class="mt-1">
-                                                @if($ticket->status === 'Resolved' && $ticket->resolved_by)
-                                                    <span class="text-[10px] text-gray-500 font-bold">
-                                                        Resolved by {{ $ticket->resolver->name ?? 'Staff' }}
-                                                    </span>
+                                            <a href="{{ route('tickets.show', $ticket) }}" class="text-blue-600 font-bold hover:underline text-sm">{{ $ticket->title }}</a>
+                                            <span class="text-[10px] mt-1">
+                                                @if($ticket->status === 'Resolved')
+                                                    <span class="text-gray-500 font-bold uppercase">Resolved by {{ $ticket->resolver->name ?? 'Staff' }}</span>
                                                 @elseif($ticket->assigned_to)
-                                                    <span class="text-[10px] text-indigo-600 font-bold">
-                                                        Assigned to {{ $ticket->assignee->name }}
-
-                                                        @if($ticket->assigned_by)
-                                                            <span class="text-gray-400 font-normal italic opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                                (by {{ $ticket->assigner->name ?? 'System' }})
-                                                            </span>
-                                                        @endif
-                                                    </span>
+                                                    <span class="text-indigo-600 font-bold uppercase">Assigned to {{ $ticket->assignee->name }}</span>
                                                 @else
-                                                    <span class="text-[10px] text-gray-400 italic">Currently Unassigned</span>
+                                                    <span class="text-gray-400">Currently Unassigned</span>
                                                 @endif
-                                            </div>
+                                            </span>
                                         </div>
                                     </td>
-
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-purple-100 text-purple-700">{{ $ticket->category }}</span>
+                                    <td class="px-6 py-4 text-xs font-bold">
+                                        <span class="px-2 py-1 rounded-full bg-purple-100 text-purple-700">{{ $ticket->category }}</span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 py-1 text-xs font-bold rounded-full
+                                    <td class="px-6 py-4 text-xs font-bold">
+                                        <span class="px-2 py-1 rounded-full
                                             {{ $ticket->priority == 'High' ? 'bg-red-100 text-red-700' : ($ticket->priority == 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700') }}">
                                             {{ $ticket->priority }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-3 py-1 text-xs font-bold rounded-full border shadow-sm
+                                    <td class="px-6 py-4 text-xs font-bold">
+                                        <span class="px-3 py-1 rounded-full border shadow-sm
                                             {{ $ticket->status == 'Open' ? 'bg-green-50 text-green-700 border-green-200' :
                                             ($ticket->status == 'Assigned' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                             ($ticket->status == 'On Hold' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200')) }}">
                                             {{ $ticket->status }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold">
-                                        <div class="flex items-center gap-2">
+                                    <td class="px-6 py-4 text-right font-medium flex gap-3 justify-end items-center">
+                                        @if(Auth::user()->role === 'admin' || Auth::id() === $ticket->user_id)
                                             <a href="{{ route('tickets.edit', $ticket) }}"
-                                            class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-sm">
+                                               class="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 font-bold transition shadow-sm text-sm uppercase">
                                                 Edit
                                             </a>
-
-                                            <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this ticket?')">
-                                                @csrf
-                                                @method('DELETE')
+                                            <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Trash this ticket?');" class="inline">
+                                                @csrf @method('DELETE')
                                                 <button type="submit"
-                                                        class="inline-flex items-center px-3 py-1.5 bg-red-600 border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-sm">
-                                                    Delete
+                                                        class="bg-red-600 text-white px-5 py-2 rounded-md hover:bg-red-700 font-bold transition shadow-sm text-sm uppercase flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                    Trash
                                                 </button>
                                             </form>
-                                        </div>
+                                        @else
+                                            <span class="text-gray-400 text-[11px] pr-4">View Only</span>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="7" class="px-6 py-10 text-center text-gray-500 italic">No tickets found.</td>
-                                </tr>
+                                <tr><td colspan="7" class="px-6 py-20 text-center text-gray-400 font-bold">No tickets found.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
