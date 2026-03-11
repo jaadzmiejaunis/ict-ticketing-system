@@ -15,40 +15,59 @@ class TicketCommentController extends Controller
 {
     public function store(Request $request, Ticket $ticket)
     {
-        $request->validate([
-            'comment' => 'required|string|max:5000',
-            'parent_id' => 'nullable|exists:ticket_comments,id',
-        ]);
+        $request->validate(['comment' => 'required', 'parent_id' => 'nullable|exists:ticket_comments,id']);
 
-        // 1. Create the comment with parent_id link
         $comment = TicketComment::create([
             'ticket_id' => $ticket->id,
-            'user_id'   => Auth::id(), // Use Auth::id() instead of id()
+            'user_id'   => Auth::id(),
             'parent_id' => $request->parent_id,
             'comment'   => $request->comment,
         ]);
 
-        // 2. Identify people to notify (excluding yourself)
-        $participants = collect([$ticket->user, $ticket->assignee])
-            ->filter()->unique('id')->where('id', '!=', Auth::id());
-
-        // 3. Scan for Mentions (@Name)
+        // 1. Find Mentioned Users (@Name)
         $mentionedUsers = collect();
         if (Str::contains($comment->comment, '@')) {
-            $mentionedUsers = User::where('id', '!=', Auth::id())->get()->filter(function($user) use ($comment) {
-                return Str::contains($comment->comment, '@' . $user->name);
+            $mentionedUsers = User::where('id', '!=', Auth::id())->get()->filter(function($u) use ($comment) {
+                return Str::contains($comment->comment, '@' . $u->name);
             });
         }
 
-        // 4. Send notifications
-        foreach ($mentionedUsers as $mUser) {
-            $mUser->notify(new CommentNotification($ticket, $comment, 'mention'));
+        // 2. Find the Parent Comment Author (if this is a reply)
+        $replyTarget = null;
+        if ($comment->parent_id) {
+            $parent = TicketComment::find($comment->parent_id);
+            if ($parent && $parent->user_id !== Auth::id()) {
+                $replyTarget = $parent->user;
+            }
         }
-        foreach ($participants->diff($mentionedUsers) as $oUser) {
-            $oUser->notify(new CommentNotification($ticket, $comment, 'reply'));
+
+        // 3. Find Ticket Stakeholders (Reporter & Assignee)
+        $stakeholders = collect([$ticket->user, $ticket->assignee])
+            ->filter()
+            ->unique('id')
+            ->where('id', '!=', Auth::id());
+
+        // --- SEND NOTIFICATIONS ---
+
+        // Send Mentions (Priority 1)
+        foreach ($mentionedUsers as $user) {
+            $user->notify(new CommentNotification($ticket, $comment, 'mention'));
+        }
+
+        // Send Reply Alert (Priority 2 - Only if they weren't already @pinged)
+        if ($replyTarget && !$mentionedUsers->contains('id', $replyTarget->id)) {
+            $replyTarget->notify(new CommentNotification($ticket, $comment, 'reply'));
+        }
+
+        // Send General Activity Alert to others
+        $others = $stakeholders->diff($mentionedUsers);
+        if ($replyTarget) { $others = $others->where('id', '!=', $replyTarget->id); }
+
+        foreach ($others as $user) {
+            $user->notify(new CommentNotification($ticket, $comment, 'update'));
         }
 
         $ticket->touch();
-        return back()->with('success', 'Comment posted!');
+        return back();
     }
 }

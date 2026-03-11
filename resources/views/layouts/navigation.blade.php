@@ -73,21 +73,19 @@
 
                         <div class="max-h-[450px] overflow-y-auto custom-scrollbar">
                             @foreach(Auth::user()->unreadNotifications as $notification)
-                                @php $isMention = ($notification->data['type'] ?? 'reply') === 'mention'; @endphp
-
-                                <a href="{{ route('tickets.show', $notification->data['ticket_id']) }}"
-                                class="flex flex-col p-4 border-b border-gray-800 transition group relative {{ $isMention ? 'bg-red-500/5' : 'bg-indigo-500/5' }}">
-
-                                    <div class="absolute left-0 top-0 bottom-0 w-1 {{ $isMention ? 'bg-red-500' : 'bg-indigo-600' }}"></div>
-
-                                    <div class="flex justify-between items-start mb-1">
-                                        <span class="text-[10px] font-black uppercase tracking-widest {{ $isMention ? 'text-red-400' : 'text-indigo-400' }}">
+                                @php
+                                    $type = $notification->data['type'] ?? 'update';
+                                    $color = $type === 'mention' ? 'text-red-400' : ($type === 'reply' ? 'text-indigo-400' : 'text-gray-400');
+                                @endphp
+                                <a href="{{ route('tickets.show', $notification->data['ticket_id']) }}" class="block p-4 border-b border-gray-800 hover:bg-gray-800 transition">
+                                    <div class="flex justify-between">
+                                        <span class="text-[10px] font-black uppercase {{ $color }}">
                                             {{ $notification->data['comment_user'] }}
-                                            {{ $isMention ? 'MENTIONED YOU' : 'replied' }}
+                                            {{ $type === 'mention' ? 'mentioned you' : ($type === 'reply' ? 'replied to you' : 'updated ticket') }}
                                         </span>
-                                        <span class="text-[9px] text-gray-500 uppercase">{{ $notification->created_at->diffForHumans(null, true) }}</span>
+                                        <span class="text-[9px] text-gray-600">{{ $notification->created_at->diffForHumans() }}</span>
                                     </div>
-                                    <p class="text-xs text-gray-200 font-bold">#{{ $notification->data['ticket_id'] }}: {{ $notification->data['ticket_title'] }}</p>
+                                    <p class="text-xs font-bold text-gray-300 mt-1">#{{ $notification->data['ticket_id'] }}: {{ $notification->data['ticket_title'] }}</p>
                                 </a>
                             @endforeach
 
