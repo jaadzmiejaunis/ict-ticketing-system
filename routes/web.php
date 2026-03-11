@@ -3,6 +3,7 @@
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Auth\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,17 +16,22 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    // Profile Management
+    // 1. Profile & Performance Management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/my-performance', [ProfileController::class, 'myPerformance'])->name('my.performance');
 
-    // Features & Statistics
+    // 2. Notifications (FIXED: These now prevent the ribbon crash)
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+
+    // 3. Features & Statistics
     Route::get('/statistics', [TicketController::class, 'statistics'])->name('statistics');
     Route::get('/tickets/export-pdf', [TicketController::class, 'exportPdf'])->name('tickets.pdf');
     Route::get('/calendar', [TicketController::class, 'calendar'])->name('calendar');
 
-    // Admin Panel & Account Management
+    // 4. Admin Panel & Account Management
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::post('/admin/staff', [AdminController::class, 'storeStaff'])->name('admin.store_staff');
     Route::get('/admin/accounts', [AdminController::class, 'manageAccounts'])->name('admin.accounts');
@@ -38,28 +44,22 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/accounts/deletion-history', [AdminController::class, 'deletionHistory'])->name('admin.accounts.deletions');
     Route::get('/admin/accounts/{user}/performance', [AdminController::class, 'performance'])->name('admin.accounts.performance');
 
-    // Ticket Management
+    // 5. Ticket Management (Removed Duplicates)
     Route::get('/tickets/trash', [TicketController::class, 'trash'])->name('tickets.trash');
     Route::post('/tickets/{id}/restore', [TicketController::class, 'restore'])->name('tickets.restore');
     Route::delete('/tickets/{id}/force-delete', [TicketController::class, 'forceDelete'])->name('tickets.force-delete');
 
     Route::resource('tickets', TicketController::class);
+
+    // Task Assignment & Resolution
     Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assignTask'])->name('tickets.assign');
     Route::post('/tickets/{ticket}/unassign', [TicketController::class, 'unassignTask'])->name('tickets.unassign');
     Route::post('/tickets/{ticket}/transfer', [TicketController::class, 'transferTask'])->name('tickets.transfer');
-    Route::get('/tickets/trash', [TicketController::class, 'trash'])->name('tickets.trash');
-    Route::post('/tickets/{id}/restore', [TicketController::class, 'restore'])->name('tickets.restore');
-
-    // Task Resolution: Use POST to avoid MethodNotAllowed errors
     Route::post('/tickets/{ticket}/resolve', [TicketController::class, 'resolveTask'])->name('tickets.resolve');
     Route::post('/tickets/{ticket}/undo-resolve', [TicketController::class, 'undoResolve'])->name('tickets.undo-resolve');
-
-    Route::get('/my-performance', [ProfileController::class, 'myPerformance'])->name('my.performance');
-
-
 });
 
-// User Session Management
+// 6. User Session Management
 Route::post('/mark-offline', function () {
     if (Auth::check()) {
         $latestLog = \App\Models\UserLog::where('user_id', Auth::id())

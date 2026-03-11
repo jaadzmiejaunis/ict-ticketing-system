@@ -47,4 +47,10 @@ class Ticket extends Model
     {
         return $this->belongsTo(User::class, 'resolved_by');
     }
+
+    // Inside class Ticket extends Model
+    public function wasRecentlyAssigned()
+    {
+        return $this->status === 'Assigned' && !is_null($this->assigned_to);
+    }
 }

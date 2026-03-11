@@ -25,6 +25,7 @@ class User extends Authenticatable
         'avatar',
         'role',
         'is_active',
+        'last_read_notifications_at',
     ];
 
     /**
