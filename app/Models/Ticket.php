@@ -53,4 +53,12 @@ class Ticket extends Model
     {
         return $this->status === 'Assigned' && !is_null($this->assigned_to);
     }
+
+    // app/Models/Ticket.php
+
+    public function comments()
+    {
+        // Filter to only get top-level comments (where parent_id is null)
+        return $this->hasMany(TicketComment::class)->whereNull('parent_id')->latest();
+    }
 }

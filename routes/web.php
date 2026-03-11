@@ -1,11 +1,12 @@
 <?php
 
-use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TicketCommentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\TicketController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -57,6 +58,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/{ticket}/transfer', [TicketController::class, 'transferTask'])->name('tickets.transfer');
     Route::post('/tickets/{ticket}/resolve', [TicketController::class, 'resolveTask'])->name('tickets.resolve');
     Route::post('/tickets/{ticket}/undo-resolve', [TicketController::class, 'undoResolve'])->name('tickets.undo-resolve');
+    Route::post('tickets/{ticket}/comments', [TicketCommentController::class, 'store'])->name('tickets.comments.store');
+
+    Route::get('tickets/{ticket}/comments', function($ticket) {
+    return redirect()->route('tickets.show', $ticket);
+    });
 });
 
 // 6. User Session Management

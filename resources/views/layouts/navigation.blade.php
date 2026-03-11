@@ -43,8 +43,12 @@
                         </svg>
 
                         @php
-                            $unreadCount = isset($globalNotifications) ? $globalNotifications->filter(fn($n) => $n->updated_at > (Auth::user()->last_read_notifications_at ?? '1970-01-01'))->count() : 0;
+                            // Merged unread count logic
+                            $dbUnreadCount = Auth::user()->unreadNotifications->count();
+                            $activityCount = isset($globalNotifications) ? $globalNotifications->filter(fn($n) => $n->updated_at > (Auth::user()->last_read_notifications_at ?? '1970-01-01'))->count() : 0;
+                            $unreadCount = $dbUnreadCount + $activityCount;
                         @endphp
+
                         @if($unreadCount > 0)
                             <span class="absolute top-2.5 right-2.5 flex h-2 w-2 rounded-full bg-red-600 border-2 border-white dark:border-gray-800"></span>
                         @endif
@@ -68,21 +72,39 @@
                         </div>
 
                         <div class="max-h-[450px] overflow-y-auto custom-scrollbar">
+                            @foreach(Auth::user()->unreadNotifications as $notification)
+                                @php $isMention = ($notification->data['type'] ?? 'reply') === 'mention'; @endphp
+
+                                <a href="{{ route('tickets.show', $notification->data['ticket_id']) }}"
+                                class="flex flex-col p-4 border-b border-gray-800 transition group relative {{ $isMention ? 'bg-red-500/5' : 'bg-indigo-500/5' }}">
+
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 {{ $isMention ? 'bg-red-500' : 'bg-indigo-600' }}"></div>
+
+                                    <div class="flex justify-between items-start mb-1">
+                                        <span class="text-[10px] font-black uppercase tracking-widest {{ $isMention ? 'text-red-400' : 'text-indigo-400' }}">
+                                            {{ $notification->data['comment_user'] }}
+                                            {{ $isMention ? 'MENTIONED YOU' : 'replied' }}
+                                        </span>
+                                        <span class="text-[9px] text-gray-500 uppercase">{{ $notification->created_at->diffForHumans(null, true) }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-200 font-bold">#{{ $notification->data['ticket_id'] }}: {{ $notification->data['ticket_title'] }}</p>
+                                </a>
+                            @endforeach
+
                             @if(isset($globalNotifications))
                                 @forelse($globalNotifications as $noti)
                                     @php
                                         $isUnread = $noti->updated_at > (Auth::user()->last_read_notifications_at ?? '1970-01-01 00:00:00');
                                         $targetRoute = $noti->trashed() ? route('tickets.trash') : route('tickets.show', $noti->id);
                                     @endphp
-
                                     <a href="{{ $targetRoute }}"
                                        class="relative p-4 border-b border-gray-800/50 hover:bg-gray-800/40 transition group block {{ $isUnread ? 'bg-gray-800/20' : 'opacity-60 grayscale-[0.3]' }}">
 
-                                        @if($isUnread)
+                                        @if($isUnread && $noti->updated_at > (Auth::user()->last_read_notifications_at ?? '1970-01-01'))
                                             <div class="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
                                         @endif
 
-                                        <div class="flex gap-4 {{ $isUnread ? 'ml-4' : '' }}">
+                                        <div class="flex gap-4 {{ ($isUnread && $noti->updated_at > (Auth::user()->last_read_notifications_at ?? '1970-01-01')) ? 'ml-4' : '' }}">
                                             <div class="flex-shrink-0">
                                                 @if($noti->assigner && $noti->assigner->avatar)
                                                     <img src="{{ asset('storage/' . $noti->assigner->avatar) }}" class="w-10 h-10 rounded-lg object-cover ring-1 ring-gray-700">
@@ -103,9 +125,7 @@
                                                     </h4>
                                                     <span class="text-[9px] font-medium text-gray-500 whitespace-nowrap">{{ $noti->updated_at->diffForHumans(null, true) }}</span>
                                                 </div>
-
                                                 <p class="text-[11px] text-gray-400 line-clamp-1 mb-2">#{{ $noti->id }}: {{ $noti->title }}</p>
-
                                                 <div class="flex items-center gap-2">
                                                     <span class="px-1.5 py-0.5 rounded bg-gray-700 text-[8px] font-black text-gray-300 uppercase tracking-wider">TICKET</span>
                                                     <span class="text-[9px] text-gray-500 italic">by {{ $noti->assigner->name ?? 'System' }}</span>
