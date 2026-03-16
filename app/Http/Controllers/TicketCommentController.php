@@ -68,6 +68,6 @@ class TicketCommentController extends Controller
         }
 
         $ticket->touch();
-        return back();
+        return back()->with('success', 'Comment posted successfully!');
     }
 }

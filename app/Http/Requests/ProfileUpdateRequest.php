@@ -17,8 +17,17 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', \Illuminate\Validation\Rule::unique(User::class)->ignore($this->user()->id)],
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'], // <--- Add this line (max 2MB)
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($this->user()->id)],
+            // Add 'image' and 'max:2048' (2MB in kilobytes)
+            'avatar' => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'avatar.max' => 'The profile picture must not be larger than 2MB.',
+            'avatar.image' => 'The file must be an image (JPG, PNG).',
         ];
     }
 }

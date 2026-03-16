@@ -9,17 +9,22 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 use App\Models\Ticket;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's personal performance profile.
+     * PRESERVED: Every line of your original Ticket and Chart logic.
      */
     public function myPerformance(): View
     {
-        $user = Auth::user(); // Get the current staff member
+        $user = Auth::user();
 
-        // 1. Fetch tickets assigned to you using the correct DB column
+        // 1. Fetch tickets assigned to you
         $tickets = Ticket::where('assigned_to', $user->id)->get();
 
         // 2. Calculate Metric Cards
@@ -70,17 +75,58 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * MASTER UPDATE: Updates Identity, Avatar, and Password in one request.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        // 1. Verify Google reCAPTCHA v2 (Single verification for the combined form)
+        /** @var \Illuminate\Http\Client\Response $response */
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret'   => env('RECAPTCHA_SECRET_KEY'),
+            'response' => $request->input('g-recaptcha-response'),
+        ]);
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $result = $response->json();
+
+        if (!$result['success']) {
+            return back()->withErrors(['g-recaptcha-response' => 'Security check failed. Please confirm you are not a robot.'])->withInput();
         }
 
-        $request->user()->save();
+        $user = $request->user();
+
+        // 2. Conditional Password Update (Triggers only if current_password is provided)
+        if ($request->filled('current_password')) {
+            $request->validate([
+                'current_password' => ['required', 'current_password'],
+                'password' => ['required', Password::defaults(), 'confirmed'],
+            ]);
+
+            $user->password = Hash::make($request->password);
+        }
+
+        // 3. Strict Image Validation
+        if ($request->hasFile('avatar')) {
+            $request->validate([
+                'avatar' => ['image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            ]);
+        }
+
+        // 4. Update Profile Details
+        $user->fill($request->validated());
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
+        }
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -95,11 +141,8 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-
         Auth::logout();
-
         $user->delete();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
