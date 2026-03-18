@@ -29,7 +29,7 @@ Route::middleware('auth')->group(function () {
 
     // 3. Features & Statistics
     Route::get('/statistics', [TicketController::class, 'statistics'])->name('statistics');
-    Route::get('/tickets/export-pdf', [TicketController::class, 'exportPdf'])->name('tickets.pdf');
+    Route::post('/tickets/export-pdf', [TicketController::class, 'exportPdf'])->name('statistics.pdf');
     Route::get('/calendar', [TicketController::class, 'calendar'])->name('calendar');
 
     // 4. Admin Panel & Account Management
