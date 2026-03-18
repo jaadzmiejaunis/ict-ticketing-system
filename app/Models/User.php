@@ -62,4 +62,9 @@ class User extends Authenticatable
         // This lets us pull all logs for a specific user, newest first
         return $this->hasMany(UserStatusLog::class)->latest();
     }
+
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\CustomResetPassword($token));
+    }
 }
