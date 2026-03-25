@@ -11,8 +11,34 @@
                 </p>
             </div>
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <div id="calendar"></div>
+            <div class="bg-gray-800 border border-gray-700 overflow-hidden shadow-sm sm:rounded-lg p-6">
+
+                <div class="
+                    [&_.fc]:text-gray-200
+                    [&_.fc-theme-standard_td]:border-gray-700
+                    [&_.fc-theme-standard_th]:border-gray-700
+                    [&_.fc-theme-standard_.fc-scrollgrid]:border-gray-700
+                    [&_.fc-toolbar-title]:text-white [&_.fc-toolbar-title]:font-bold
+                    [&_.fc-daygrid-day-number]:text-gray-400 [&_.fc-daygrid-day-number]:no-underline hover:[&_.fc-daygrid-day-number]:text-gray-300
+                    [&_.fc-col-header-cell-cushion]:text-gray-300 [&_.fc-col-header-cell-cushion]:py-2
+                    [&_.fc-day-today]:!bg-indigo-500/15
+                    [&_.fc-button-primary]:!bg-indigo-600 [&_.fc-button-primary]:!border-indigo-600 [&_.fc-button-primary]:capitalize [&_.fc-button-primary]:font-bold
+                    hover:[&_.fc-button-primary]:!bg-indigo-700 hover:[&_.fc-button-primary]:!border-indigo-700
+                    [&_.fc-button-primary:not(:disabled):active]:!bg-indigo-800 [&_.fc-button-primary:not(:disabled):active]:!border-indigo-900
+                    [&_.fc-button-active]:!bg-indigo-800 [&_.fc-button-active]:!border-indigo-900
+                    [&_.fc-list-empty]:bg-gray-800
+                    [&_.fc-list]:border-gray-700
+                    [&_.fc-list-day-cushion]:bg-gray-700
+                    [&_.fc-list-event:hover_td]:bg-gray-700
+                    [&_.fc-popover]:bg-gray-800 [&_.fc-popover]:border-gray-700 [&_.fc-popover]:shadow-xl [&_.fc-popover]:rounded-lg
+                    [&_.fc-popover-header]:bg-gray-700 [&_.fc-popover-header]:text-white [&_.fc-popover-header]:rounded-t-lg
+                    [&_.fc-more-link]:text-indigo-400 [&_.fc-more-link]:font-bold
+                    [&_.fc-event]:cursor-pointer [&_.fc-event]:border-none [&_.fc-event]:px-1.5 [&_.fc-event]:py-0.5 [&_.fc-event]:text-[0.85em] [&_.fc-event]:rounded
+                    [&_.fc-daygrid-event-dot]:border-4
+                ">
+                    <div id="calendar"></div>
+                </div>
+
             </div>
 
         </div>
@@ -48,15 +74,4 @@
             calendar.render();
         });
     </script>
-
-    <style>
-        .fc-event {
-            cursor: pointer;
-            border: none;
-            padding: 2px 4px;
-            font-size: 0.85em;
-            border-radius: 4px;
-        }
-        .fc-daygrid-event-dot { border-width: 4px; }
-    </style>
 </x-app-layout>

@@ -20,7 +20,7 @@
                         </div>
                     </form>
 
-                    <button type="button" id="downloadPdfBtn" class="bg-white text-gray-800 font-bold py-2 px-4 rounded shadow hover:bg-gray-100 transition-colors h-[42px] flex items-center gap-2">
+                    <button type="button" id="downloadPdfBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded shadow-md transition-colors h-[42px] flex items-center gap-2">
                         <i class="fas fa-download"></i> Download PDF Report
                     </button>
 
@@ -33,56 +33,60 @@
             </div>
 
             <div id="pdf-dashboard-content" style="padding: 20px; border-radius: 8px;">
+
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-gray-800">
-                        <dt class="text-xs font-bold text-gray-500 uppercase">Total</dt>
-                        <dd class="mt-1 text-2xl font-black text-gray-900">{{ $stats['total'] }}</dd>
+                    <div class="bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-gray-500">
+                        <dt class="text-xs font-bold text-gray-400 uppercase">Total</dt>
+                        <dd class="mt-1 text-2xl font-black text-white">{{ $stats['total'] }}</dd>
                     </div>
 
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-green-500">
-                        <dt class="text-xs font-bold text-gray-500 uppercase">Open</dt>
-                        <dd class="mt-1 text-2xl font-black text-green-600">{{ $stats['open'] }}</dd>
+                    <div class="bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-green-500">
+                        <dt class="text-xs font-bold text-gray-400 uppercase">Open</dt>
+                        <dd class="mt-1 text-2xl font-black text-green-400">{{ $stats['open'] }}</dd>
                     </div>
 
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-blue-500">
-                        <dt class="text-xs font-bold text-gray-500 uppercase">Assigned</dt>
-                        <dd class="mt-1 text-2xl font-black text-blue-600">{{ $stats['assigned'] }}</dd>
+                    <div class="bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-blue-500">
+                        <dt class="text-xs font-bold text-gray-400 uppercase">Assigned</dt>
+                        <dd class="mt-1 text-2xl font-black text-blue-400">{{ $stats['assigned'] }}</dd>
                     </div>
 
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-yellow-500">
-                        <dt class="text-xs font-bold text-gray-500 uppercase">On Hold</dt>
-                        <dd class="mt-1 text-2xl font-black text-yellow-600">{{ $stats['on_hold'] }}</dd>
+                    <div class="bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-yellow-500">
+                        <dt class="text-xs font-bold text-gray-400 uppercase">On Hold</dt>
+                        <dd class="mt-1 text-2xl font-black text-yellow-400">{{ $stats['on_hold'] }}</dd>
                     </div>
 
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-gray-400">
-                        <dt class="text-xs font-bold text-gray-500 uppercase">Resolved</dt>
-                        <dd class="mt-1 text-2xl font-black text-gray-400">{{ $stats['resolved'] }}</dd>
+                    <div class="bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border-t-4 border-gray-400">
+                        <dt class="text-xs font-bold text-gray-400 uppercase">Resolved</dt>
+                        <dd class="mt-1 text-2xl font-black text-gray-300">{{ $stats['resolved'] }}</dd>
                     </div>
                 </div>
 
                 <div id="charts-capture-area" class="grid grid-cols-1 md:grid-cols-3 gap-6" style="padding: 20px; background-color: #1a1d24; border-radius: 8px;">
-                    <div class="bg-white shadow-sm sm:rounded-lg p-6 flex flex-col items-center">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 text-center">Resolution Status</h3>
+                    <div class="bg-gray-800 shadow-sm sm:rounded-lg p-6 flex flex-col items-center">
+                        <h3 class="text-lg font-medium text-white mb-4 text-center">Resolution Status</h3>
                         <div class="relative h-64 w-full flex justify-center"><canvas id="statusChart"></canvas></div>
                     </div>
 
-                    <div class="bg-white shadow-sm sm:rounded-lg p-6 flex flex-col items-center">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 text-center">Issue Categories</h3>
+                    <div class="bg-gray-800 shadow-sm sm:rounded-lg p-6 flex flex-col items-center">
+                        <h3 class="text-lg font-medium text-white mb-4 text-center">Issue Categories</h3>
                         <div class="relative h-64 w-full flex justify-center"><canvas id="categoryChart"></canvas></div>
                     </div>
 
-                    <div class="bg-white shadow-sm sm:rounded-lg p-6 flex flex-col items-center">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 text-center">Priority Levels</h3>
+                    <div class="bg-gray-800 shadow-sm sm:rounded-lg p-6 flex flex-col items-center">
+                        <h3 class="text-lg font-medium text-white mb-4 text-center">Priority Levels</h3>
                         <div class="relative h-64 w-full flex justify-center"><canvas id="priorityChart"></canvas></div>
                     </div>
                 </div>
             </div>
-            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Set global Chart.js text color to light gray for dark mode
+        Chart.defaults.color = '#9ca3af';
+
         // 1. Status Chart (Pie)
         const ctxStatus = document.getElementById('statusChart');
         new Chart(ctxStatus, {
@@ -96,17 +100,56 @@
                         {{ $stats['on_hold'] }},
                         {{ $stats['resolved'] }}
                     ],
-                    backgroundColor: ['#22c55e', '#3b82f6', '#eab308', '#9ca3af'],
-                    borderWidth: 1
+                    backgroundColor: ['#22c55e', '#3b82f6', '#eab308', '#6b7280'],
+                    borderColor: '#1f2937', // Matches bg-gray-800
+                    borderWidth: 2
                 }]
             }
         });
 
+        // 2. Category Chart (Bar)
         const ctxCategory = document.getElementById('categoryChart');
-        new Chart(ctxCategory, { type: 'bar', data: { labels: ['Hardware', 'Software', 'Network'], datasets: [{ label: 'Tickets', data: [{{ $stats['hardware'] }}, {{ $stats['software'] }}, {{ $stats['network'] }}], backgroundColor: ['#ef4444', '#3b82f6', '#eab308'], borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } } });
+        new Chart(ctxCategory, {
+            type: 'bar',
+            data: {
+                labels: ['Hardware', 'Software', 'Network'],
+                datasets: [{
+                    label: 'Tickets',
+                    data: [{{ $stats['hardware'] }}, {{ $stats['software'] }}, {{ $stats['network'] }}],
+                    backgroundColor: ['#ef4444', '#3b82f6', '#eab308'],
+                    borderColor: '#1f2937',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: '#374151' } // Dark gray grid lines
+                    },
+                    x: {
+                        grid: { color: '#374151' } // Dark gray grid lines
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
 
+        // 3. Priority Chart (Doughnut)
         const ctxPriority = document.getElementById('priorityChart');
-        new Chart(ctxPriority, { type: 'doughnut', data: { labels: ['High', 'Medium', 'Low'], datasets: [{ data: [{{ $stats['high'] }}, {{ $stats['medium'] }}, {{ $stats['low'] }}], backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'], borderWidth: 1 }] } });
+        new Chart(ctxPriority, {
+            type: 'doughnut',
+            data: {
+                labels: ['High', 'Medium', 'Low'],
+                datasets: [{
+                    data: [{{ $stats['high'] }}, {{ $stats['medium'] }}, {{ $stats['low'] }}],
+                    backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'],
+                    borderColor: '#1f2937',
+                    borderWidth: 2
+                }]
+            }
+        });
     </script>
     <script>
         document.getElementById('downloadPdfBtn').addEventListener('click', function() {
