@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
+use App\Models\User;
+use App\Notifications\TicketUpdateNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -13,24 +15,20 @@ class TicketController extends Controller
     {
         $query = Ticket::query();
 
-        // 1. Handle Priority Filter
         if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
         }
 
-        // 2. Handle Status Filter
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // 3. Handle Filters (Assigned to Me vs My Created Tickets)
         if ($request->get('filter') === 'assigned_by_me') {
             $query->where('assigned_to', Auth::id());
         } elseif ($request->get('filter') === 'owned') {
             $query->where('user_id', Auth::id());
         }
 
-        // 4. Handle Search Keywords
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
@@ -39,12 +37,11 @@ class TicketController extends Controller
             });
         }
 
-        // 5. Sequential ID Sorting
         $sort = $request->get('sort', 'id_desc');
         $query->orderBy('id', $sort === 'id_asc' ? 'asc' : 'desc');
 
         $tickets = $query->with(['assignee', 'assigner', 'resolver'])->paginate(10);
-        $users = \App\Models\User::all();
+        $users = User::all();
 
         return view('tickets.index', compact('tickets', 'users'));
     }
@@ -81,7 +78,7 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket)
     {
-        $users = \App\Models\User::all();
+        $users = User::all();
         return view('tickets.show', compact('ticket', 'users'));
     }
 
@@ -91,13 +88,20 @@ class TicketController extends Controller
             return redirect()->route('tickets.index')->with('error', 'Unauthorized access.');
         }
 
-        $users = \App\Models\User::all();
+        $users = User::all();
         return view('tickets.edit', compact('ticket', 'users'));
     }
 
     public function update(Request $request, Ticket $ticket)
     {
+        $oldStatus = $ticket->status;
         $ticket->update($request->all());
+
+        // Notify the reporter if the status changed
+        if ($oldStatus !== $ticket->status && $ticket->user) {
+            $ticket->user->notify(new TicketUpdateNotification($ticket, 'status_change', Auth::user()->name));
+        }
+
         return redirect()->route('tickets.show', $ticket)
             ->with('success', 'Ticket #' . $ticket->id . ' has been updated successfully!');
     }
@@ -111,7 +115,7 @@ class TicketController extends Controller
             ->with('success', 'Ticket #' . $ticketId . ' has been trashed.');
     }
 
-    public function statistics(\Illuminate\Http\Request $request)
+    public function statistics(Request $request)
     {
         $selectedMonth = $request->query('month', now()->format('Y-m'));
 
@@ -145,7 +149,6 @@ class TicketController extends Controller
         return view('statistics', compact('stats'));
     }
 
-    // UPDATED EXPORT PDF METHOD
     public function exportPdf(Request $request)
     {
         $request->validate([
@@ -156,19 +159,16 @@ class TicketController extends Controller
         $imageData = $request->input('dashboard_image');
         $selectedMonth = $request->input('month');
 
-        // Parse the date safely
         try {
             $targetDate = \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth);
         } catch (\Exception $e) {
             $targetDate = now();
         }
 
-        // Fetch the detailed tickets for the table
         $monthlyTickets = Ticket::whereMonth('created_at', $targetDate->month)
                                 ->whereYear('created_at', $targetDate->year)
                                 ->get();
 
-        // Re-calculate the stats for the crisp HTML summary boxes
         $stats = [
             'total'     => $monthlyTickets->count(),
             'open'      => $monthlyTickets->where('status', 'Open')->count(),
@@ -178,8 +178,6 @@ class TicketController extends Controller
         ];
 
         $pdf = Pdf::loadView('tickets.pdf_report', compact('imageData', 'stats', 'monthlyTickets', 'targetDate'));
-
-        // Portrait often looks more like a formal document, but we will use landscape to fit the charts nicely
         $pdf->setPaper('A4', 'landscape');
 
         return $pdf->download('ICT_Monthly_Report_'.$targetDate->format('M_Y').'.pdf');
@@ -216,12 +214,17 @@ class TicketController extends Controller
             'status' => 'Assigned'
         ]);
 
+        // Notify the reporter that someone claimed their ticket
+        if ($ticket->user) {
+            $ticket->user->notify(new TicketUpdateNotification($ticket, 'assigned', Auth::user()->name));
+        }
+
         return back()->with('success', 'Task claimed successfully.');
     }
 
     public function unassignTask(Ticket $ticket)
     {
-        if (\Illuminate\Support\Facades\Auth::id() !== $ticket->assigned_to) {
+        if (Auth::id() !== $ticket->assigned_to) {
             abort(403, 'Unauthorized action. You can only unassign your own tickets.');
         }
 
@@ -244,6 +247,11 @@ class TicketController extends Controller
             'resolved_by' => Auth::id()
         ]);
 
+        // Notify the reporter that the ticket is resolved
+        if ($ticket->user) {
+            $ticket->user->notify(new TicketUpdateNotification($ticket, 'resolved', Auth::user()->name));
+        }
+
         return back()->with('success', 'Ticket Resolved.');
     }
 
@@ -256,6 +264,12 @@ class TicketController extends Controller
             'assigned_by' => Auth::id(),
             'status' => 'Assigned'
         ]);
+
+        // Notify the new assignee
+        $newAssignee = User::find($request->new_user_id);
+        if ($newAssignee) {
+            $newAssignee->notify(new TicketUpdateNotification($ticket, 'transferred', Auth::user()->name));
+        }
 
         return back()->with('success', 'Task reassigned.');
     }

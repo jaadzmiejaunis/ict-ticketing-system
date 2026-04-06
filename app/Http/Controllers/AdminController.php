@@ -5,16 +5,31 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\UserLog;
+use App\Models\UserStatusLog;
+use App\Models\UserDeleteLog;
+use App\Models\Ticket;
+use App\Notifications\WelcomeStaffNotification;
+use App\Notifications\AdminActivityNotification; // Ensure this notification class exists
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
+    /**
+     * Helper to notify all administrators of an action.
+     */
+    private function notifyAdmins($notification)
+    {
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify($notification);
+        }
+    }
+
     public function index(Request $request)
     {
         $query = User::query();
 
-        // 1. Apply Search Filter
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
@@ -22,12 +37,10 @@ class AdminController extends Controller
             });
         }
 
-        // 2. Apply Role Filter
         if ($request->filled('role')) {
             $query->where('role', $request->role);
         }
 
-        // 3. Apply Sorting Logic
         $sort = $request->get('sort', 'recent');
         if ($sort === 'oldest') {
             $query->orderBy('created_at', 'asc');
@@ -35,14 +48,12 @@ class AdminController extends Controller
             $query->orderBy('created_at', 'desc');
         }
 
-        $activeUsers = (clone $query)->where('is_active', 1)->paginate(10)->withQueryString();
-        $inactiveUsers = (clone $query)->where('is_active', 0)->paginate(10)->withQueryString();
+        $activeUsers = (clone $query)->where('is_active', 1)->paginate(10, ['*'], 'active_page')->withQueryString();
+        $inactiveUsers = (clone $query)->where('is_active', 0)->paginate(10, ['*'], 'inactive_page')->withQueryString();
 
         return view('admin.accounts.index', compact('activeUsers', 'inactiveUsers'));
     }
 
-    // Add a new staff member
-    // Add a new user
     public function storeStaff(Request $request)
     {
         if (Auth::user()->role !== 'admin') {
@@ -56,21 +67,22 @@ class AdminController extends Controller
             'role' => 'required|in:admin,staff',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
         ]);
 
+        // 1. Notify the new staff member
+        $user->notify(new WelcomeStaffNotification($user, Auth::user()->name));
+
+        // 2. Notify all admins of the new account creation
+        $this->notifyAdmins(new AdminActivityNotification('created', $user, Auth::user()->name));
+
         return redirect()->route('admin.accounts')->with('success', 'User account created successfully!');
     }
 
-    // ==========================================
-    // ACCOUNT MANAGEMENT SYSTEM
-    // ==========================================
-
-    // Show the Create User Form
     public function createAccount()
     {
         if (Auth::user()->role !== 'admin') {
@@ -79,22 +91,19 @@ class AdminController extends Controller
         return view('admin.accounts.create');
     }
 
-    // 1. Show the Account Management Page
     public function manageAccounts(Request $request)
     {
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
-        // 1. Capture search, filter, and sort inputs
         $search = $request->input('search');
         $roleFilter = $request->input('role');
-        $sort = $request->get('sort', 'recent'); // Matches your "Sort By" dropdown
+        $sort = $request->get('sort', 'recent');
 
         $activeQuery = User::where('is_active', true);
         $inactiveQuery = User::where('is_active', false);
 
-        // 2. Apply Search Filter
         if ($search) {
             $activeQuery->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
@@ -104,40 +113,36 @@ class AdminController extends Controller
             });
         }
 
-        // 3. Apply Role Filter
         if ($roleFilter) {
             $activeQuery->where('role', $roleFilter);
             $inactiveQuery->where('role', $roleFilter);
         }
 
-        // 4. UPDATED: Multi-option Sorting Logic
         switch ($sort) {
             case 'oldest':
                 $activeQuery->orderBy('created_at', 'asc');
                 $inactiveQuery->orderBy('created_at', 'asc');
                 break;
-            case 'az': // Alphabetical A-Z
+            case 'az':
                 $activeQuery->orderBy('name', 'asc');
                 $inactiveQuery->orderBy('name', 'asc');
                 break;
-            case 'za': // Alphabetical Z-A
+            case 'za':
                 $activeQuery->orderBy('name', 'desc');
                 $inactiveQuery->orderBy('name', 'desc');
                 break;
-            default: // Defaults to 'recent' (Newest First)
+            default:
                 $activeQuery->orderBy('created_at', 'desc');
                 $inactiveQuery->orderBy('created_at', 'desc');
                 break;
         }
 
-        // 5. Execute with dual-pagination
         $activeUsers = $activeQuery->paginate(10, ['*'], 'active_page')->withQueryString();
         $inactiveUsers = $inactiveQuery->paginate(10, ['*'], 'inactive_page')->withQueryString();
 
         return view('admin.accounts.index', compact('activeUsers', 'inactiveUsers'));
     }
 
-    // 2. Show the Edit Form for a specific user
     public function editAccount(User $user)
     {
         if (Auth::user()->role !== 'admin') {
@@ -147,14 +152,12 @@ class AdminController extends Controller
         return view('admin.accounts.edit', compact('user'));
     }
 
-    // 3. Save the updated user data
     public function updateAccount(Request $request, User $user)
     {
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
-        // Added 'password' => 'nullable' so it doesn't force a change every time
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
@@ -168,72 +171,74 @@ class AdminController extends Controller
             'role' => $request->role,
         ];
 
-        // If the admin typed a new password, hash it and add it to the update list
         if ($request->filled('password')) {
             $dataToUpdate['password'] = Hash::make($request->password);
         }
 
         $user->update($dataToUpdate);
 
+        // Notify admins that an account was updated
+        $this->notifyAdmins(new AdminActivityNotification('updated', $user, Auth::user()->name));
+
         return redirect()->route('admin.accounts')->with('success', 'Account updated successfully!');
     }
 
-    // 4. Toggle the user's active status (Deactivate/Reactivate)
     public function toggleStatus(User $user)
     {
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
-        // Security Check: Prevent the admin from deactivating themselves!
         if ($user->id === Auth::id()) {
             return back()->withErrors(['error' => 'You cannot deactivate your own account!']);
         }
 
-        // Flip the status boolean
         $user->update([
             'is_active' => !$user->is_active
         ]);
 
-        // NEW: Log the status change
-        \App\Models\UserStatusLog::create([
+        UserStatusLog::create([
             'user_id' => $user->id,
-            'admin_id' => Auth::id(), // Record which admin performed the action
-            'new_status' => $user->is_active, // Stores 0 or 1
+            'admin_id' => Auth::id(),
+            'new_status' => $user->is_active,
             'reason' => request('reason', 'System status toggle'),
         ]);
 
-        $status = $user->is_active ? 'activated' : 'deactivated';
-        return back()->with('success', "Account {$status} successfully!");
+        $statusAction = $user->is_active ? 'activated' : 'deactivated';
+
+        // Notify admins of the status change
+        $this->notifyAdmins(new AdminActivityNotification($statusAction, $user, Auth::user()->name));
+
+        return back()->with('success', "Account {$statusAction} successfully!");
     }
 
-    // 5. Permanently Delete a User
     public function deleteAccount(User $user)
     {
-        // 1. Mandatory Security Check: Prevents self-deletion at the server level
         if (Auth::id() === $user->id) {
             return back()->withErrors(['error' => 'Security Violation: You cannot delete your own account.']);
         }
 
-        // 2. Log details into the permanent Audit Trail
-        \App\Models\UserDeleteLog::create([
+        // Capture user data before deletion for the notification message
+        $userData = ['name' => $user->name, 'email' => $user->email];
+
+        UserDeleteLog::create([
             'user_name' => $user->name,
             'user_email' => $user->email,
             'admin_id' => Auth::id(),
-            'reason' => request('reason') // Captured from the JS prompt box
+            'reason' => request('reason')
         ]);
 
-        // 3. Final Destruction
         $user->delete();
+
+        // Notify admins of the permanent deletion
+        $this->notifyAdmins(new AdminActivityNotification('permanently deleted', $userData, Auth::user()->name));
 
         return back()->with('success', 'User permanently removed and deletion reason logged.');
     }
 
-    //Check deactivated staff account.
     public function history(User $user)
     {
-        // Fetches logs for the specific user and includes the Admin's name
-        $logs = \App\Models\UserStatusLog::with('admin')
+        $logs = UserStatusLog::with('admin')
             ->where('user_id', $user->id)
             ->latest()
             ->get();
@@ -243,29 +248,23 @@ class AdminController extends Controller
 
     public function deletionHistory()
     {
-        // Fetches the permanent deletion records, newest first
-        $logs = \App\Models\UserDeleteLog::with('admin')->latest()->paginate(15);
+        $logs = UserDeleteLog::with('admin')->latest()->paginate(15);
 
         return view('admin.accounts.deletions', compact('logs'));
     }
 
-    // Fetch Staff Performance Statistics
     public function performance(User $user)
     {
         if (Auth::user()->role !== 'admin') {
             abort(403);
         }
 
-        // 1. Fetch all tickets assigned to this specific user
-        // IMPORTANT: Verify '\App\Models\Ticket' and 'assigned_to' match your database
-        $tickets = \App\Models\Ticket::where('assigned_to', $user->id)->get();
+        $tickets = Ticket::where('assigned_to', $user->id)->get();
 
-        // 2. Calculate Top Cards
         $totalAssigned = $tickets->count();
         $resolvedCount = $tickets->where('status', 'Resolved')->count();
         $pendingCount = $tickets->whereIn('status', ['Open', 'Assigned', 'On Hold'])->count();
 
-        // 3. Prepare data for the Visual Graphics (Charts)
         $chartData = [
             'status' => [
                 'Open' => $tickets->where('status', 'Open')->count(),
@@ -285,8 +284,7 @@ class AdminController extends Controller
             ]
         ];
 
-        // 4. Get recent tasks
-        $recentTasks = \App\Models\Ticket::where('assigned_to', $user->id)
+        $recentTasks = Ticket::where('assigned_to', $user->id)
                             ->where('status', 'Resolved')
                             ->latest('updated_at')
                             ->take(5)
