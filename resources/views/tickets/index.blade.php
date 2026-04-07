@@ -161,7 +161,7 @@
                                                 @elseif($ticket->assigned_to)
                                                     <span class="text-indigo-400 font-bold uppercase">Assigned to {{ $ticket->assignee->name }}</span>
                                                 @else
-                                                    <span class="text-gray-500">Currently Unassigned</span>
+                                                    <span class="text-gray-500">Logged by: {{ $ticket->user->name ?? 'System' }}</span>
                                                 @endif
                                             </span>
                                         </div>

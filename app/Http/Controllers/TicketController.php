@@ -8,6 +8,7 @@ use App\Notifications\TicketUpdateNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TicketController extends Controller
 {
@@ -15,6 +16,7 @@ class TicketController extends Controller
     {
         $query = Ticket::query();
 
+        // Filtering Logic
         if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
         }
@@ -29,6 +31,7 @@ class TicketController extends Controller
             $query->where('user_id', Auth::id());
         }
 
+        // Search Logic
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
@@ -37,10 +40,15 @@ class TicketController extends Controller
             });
         }
 
+        // Always sort by newest created first so new tickets appear immediately
         $sort = $request->get('sort', 'id_desc');
-        $query->orderBy('id', $sort === 'id_asc' ? 'asc' : 'desc');
+        if ($sort === 'id_asc') {
+            $query->orderBy('created_at', 'asc');
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
 
-        $tickets = $query->with(['assignee', 'assigner', 'resolver'])->paginate(10);
+        $tickets = $query->with(['assignee', 'assigner', 'resolver', 'user'])->paginate(10);
         $users = User::all();
 
         return view('tickets.index', compact('tickets', 'users'));
@@ -63,8 +71,14 @@ class TicketController extends Controller
         ]);
 
         $validated['user_id'] = Auth::id();
-        $ticket = Ticket::create($validated);
+        $validated['status'] = 'Open';
 
+        // Use a transaction to ensure the ticket is saved before redirecting
+        $ticket = DB::transaction(function () use ($validated) {
+            return Ticket::create($validated);
+        });
+
+        // Update the 'Recently Created' session widget
         $recent = session()->get('recent_created', []);
         array_unshift($recent, [
             'id' => $ticket->id,
@@ -73,7 +87,7 @@ class TicketController extends Controller
         ]);
         session()->put('recent_created', array_slice($recent, 0, 3));
 
-        return redirect()->route('tickets.index')->with('success', 'Ticket created successfully.');
+        return redirect()->route('tickets.index')->with('success', 'Ticket #' . $ticket->id . ' created successfully.');
     }
 
     public function show(Ticket $ticket)
@@ -97,7 +111,6 @@ class TicketController extends Controller
         $oldStatus = $ticket->status;
         $ticket->update($request->all());
 
-        // Notify the reporter if the status changed
         if ($oldStatus !== $ticket->status && $ticket->user) {
             $ticket->user->notify(new TicketUpdateNotification($ticket, 'status_change', Auth::user()->name));
         }
@@ -112,7 +125,7 @@ class TicketController extends Controller
         $ticket->delete();
 
         return redirect()->route('tickets.index')
-            ->with('success', 'Ticket #' . $ticketId . ' has been trashed.');
+            ->with('success', 'Ticket #' . $ticketId . ' has been moved to trash.');
     }
 
     public function statistics(Request $request)
@@ -214,7 +227,6 @@ class TicketController extends Controller
             'status' => 'Assigned'
         ]);
 
-        // Notify the reporter that someone claimed their ticket
         if ($ticket->user) {
             $ticket->user->notify(new TicketUpdateNotification($ticket, 'assigned', Auth::user()->name));
         }
@@ -225,7 +237,7 @@ class TicketController extends Controller
     public function unassignTask(Ticket $ticket)
     {
         if (Auth::id() !== $ticket->assigned_to) {
-            abort(403, 'Unauthorized action. You can only unassign your own tickets.');
+            abort(403, 'Unauthorized action.');
         }
 
         $ticket->update([
@@ -233,7 +245,7 @@ class TicketController extends Controller
             'assigned_to' => null
         ]);
 
-        return back()->with('success', 'You have dropped this ticket. It is now Open for others to claim.');
+        return back()->with('success', 'Ticket dropped and set to Open.');
     }
 
     public function resolveTask(Ticket $ticket)
@@ -247,7 +259,6 @@ class TicketController extends Controller
             'resolved_by' => Auth::id()
         ]);
 
-        // Notify the reporter that the ticket is resolved
         if ($ticket->user) {
             $ticket->user->notify(new TicketUpdateNotification($ticket, 'resolved', Auth::user()->name));
         }
@@ -265,7 +276,6 @@ class TicketController extends Controller
             'status' => 'Assigned'
         ]);
 
-        // Notify the new assignee
         $newAssignee = User::find($request->new_user_id);
         if ($newAssignee) {
             $newAssignee->notify(new TicketUpdateNotification($ticket, 'transferred', Auth::user()->name));
@@ -281,7 +291,7 @@ class TicketController extends Controller
             'resolved_by' => null,
         ]);
 
-        return back()->with('success', 'Resolution undone. Ticket is now active again.');
+        return back()->with('success', 'Resolution undone.');
     }
 
     public function trash(Request $request)
@@ -301,14 +311,9 @@ class TicketController extends Controller
             });
         }
 
-        $sort = $request->get('sort', 'deleted_desc');
-        if ($sort === 'deleted_asc') {
-            $query->orderBy('deleted_at', 'asc');
-        } else {
-            $query->orderBy('deleted_at', 'desc');
-        }
-
+        $query->orderBy('deleted_at', 'desc');
         $deletedTickets = $query->paginate(10);
+
         return view('tickets.deleted', compact('deletedTickets'));
     }
 
@@ -327,7 +332,7 @@ class TicketController extends Controller
 
         $ticket->forceDelete();
 
-        return back()->with('success', "Ticket #$id has been permanently erased from the system.");
+        return back()->with('success', "Ticket #$id permanently erased.");
     }
 
     public function restore($id)
