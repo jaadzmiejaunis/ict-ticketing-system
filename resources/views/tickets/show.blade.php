@@ -52,61 +52,46 @@
                         Task Management
                     </h3>
 
-                    <div class="mb-6 pb-4 border-b border-gray-800 space-y-2">
-                        @if($ticket->status === 'Resolved')
-                            <div class="flex flex-col gap-0.5">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                                    <p class="text-blue-500 font-bold uppercase text-xs">Task Resolved By: <span class="text-white">{{ $ticket->resolver->name ?? 'System Staff' }}</span></p>
-                                </div>
-                                <p class="text-[10px] text-gray-500 ml-4 italic font-medium">Resolved on: {{ $ticket->updated_at->format('d M Y, h:i A') }}</p>
-                            </div>
-                        @elseif($ticket->assigned_to)
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full bg-green-500 {{ $ticket->status !== 'On Hold' ? 'animate-pulse' : '' }}"></div>
-                                <p class="{{ $ticket->status === 'On Hold' ? 'text-yellow-500' : 'text-indigo-400' }} font-bold uppercase text-xs">
-                                    {{ $ticket->status === 'On Hold' ? 'Task Currently Paused:' : 'Currently Assigned To:' }}
-                                    <span class="text-white">{{ $ticket->assignee->name }}</span>
-                                </p>
-                            </div>
-                        @else
-                            <div class="flex items-center gap-2 text-gray-500 font-bold italic uppercase text-xs">
-                                <div class="w-2 h-2 rounded-full bg-yellow-600"></div>
-                                <p>Status: Unassigned / Waiting for Staff</p>
-                            </div>
-                        @endif
-                    </div>
-
                     <div class="flex flex-wrap gap-3 items-center mb-6">
                         @if($ticket->status === 'Resolved')
                             @if(strtolower(Auth::user()->role) === 'admin' || Auth::id() === $ticket->assigned_to)
                                 <form action="{{ route('tickets.undo-resolve', $ticket) }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase border border-yellow-500">Undo Resolution</button>
+                                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase">Undo Resolution</button>
                                 </form>
                             @endif
+                        @elseif($ticket->status === 'On Hold')
+                            <form action="{{ route('tickets.resume', $ticket) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase">Resume Task</button>
+                            </form>
+
+                            <form action="{{ route('tickets.unassign', $ticket->id) }}" method="POST" onsubmit="return confirm('Drop this task?')">
+                                @csrf
+                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase">Drop Task</button>
+                            </form>
                         @else
                             @if($ticket->assigned_to && (Auth::id() === $ticket->assigned_to || strtolower(Auth::user()->role) === 'admin'))
                                 <form action="{{ route('tickets.resolve', $ticket) }}" method="POST" onsubmit="return confirm('Mark as Resolved?')">
                                     @csrf
-                                    <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase border border-green-500">Mark as Resolved</button>
+                                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase">Mark as Resolved</button>
                                 </form>
-                                @if($ticket->status !== 'On Hold')
-                                    <form action="{{ route('tickets.update', $ticket->id) }}" method="POST">
-                                        @csrf @method('PUT')
-                                        <input type="hidden" name="status" value="On Hold">
-                                        <input type="hidden" name="reporter_name" value="{{ $ticket->reporter_name }}"><input type="hidden" name="title" value="{{ $ticket->title }}"><input type="hidden" name="description" value="{{ $ticket->description }}"><input type="hidden" name="priority" value="{{ $ticket->priority }}"><input type="hidden" name="category" value="{{ $ticket->category }}">
-                                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase border border-yellow-500">Put On Hold</button>
-                                    </form>
-                                @endif
+
+                                <form action="{{ route('tickets.update', $ticket->id) }}" method="POST">
+                                    @csrf @method('PUT')
+                                    <input type="hidden" name="status" value="On Hold">
+                                    <input type="hidden" name="reporter_name" value="{{ $ticket->reporter_name }}"><input type="hidden" name="title" value="{{ $ticket->title }}"><input type="hidden" name="description" value="{{ $ticket->description }}"><input type="hidden" name="priority" value="{{ $ticket->priority }}"><input type="hidden" name="category" value="{{ $ticket->category }}">
+                                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase">Put On Hold</button>
+                                </form>
+
                                 <form action="{{ route('tickets.unassign', $ticket->id) }}" method="POST" onsubmit="return confirm('Drop this task?')">
                                     @csrf
-                                    <button type="submit" class="bg-red-600 hover:bg-red-500 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase border border-red-500">Drop Task</button>
+                                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase">Drop Task</button>
                                 </form>
                             @elseif(!$ticket->assigned_to)
                                 <form action="{{ route('tickets.assign', $ticket->id) }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase border border-indigo-500">Claim This Task</button>
+                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md font-bold transition h-11 shadow-md text-xs uppercase">Claim This Task</button>
                                 </form>
                             @endif
                         @endif

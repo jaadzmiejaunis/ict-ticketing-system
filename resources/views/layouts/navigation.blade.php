@@ -58,98 +58,96 @@
                              class="absolute right-0 top-full mt-2 w-96 bg-[#111827] rounded-2xl shadow-2xl border border-gray-700 z-[100] overflow-hidden" style="display: none;">
 
                             <div class="p-6 border-b border-gray-800">
-                                <div class="flex justify-between items-center mb-4">
+                                <div class="flex justify-between items-center mb-5">
                                     <div>
-                                        <h3 class="text-sm font-black text-white uppercase tracking-widest">Notifications</h3>
-                                        <p class="text-[10px] text-gray-500 font-bold">{{ $unreadCount }} unread messages</p>
+                                        <h3 class="text-sm font-black text-white uppercase tracking-[0.2em]">Notifications</h3>
+                                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">{{ $unreadCount }} unread messages</p>
                                     </div>
                                     <form action="{{ route('notifications.readAll') }}" method="POST" @submit.stop>
                                         @csrf
-                                        <button type="submit" @click.stop class="text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-widest">Mark All Read</button>
+                                        <button type="submit" @click.stop class="text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-widest bg-indigo-500/10 px-3 py-1.5 rounded-lg transition border border-indigo-500/20">Mark All Read</button>
                                     </form>
                                 </div>
 
-                                <div class="flex p-1 bg-gray-900/50 rounded-xl gap-1">
-                                    <button @click="tab = 'all'" :class="tab === 'all' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-gray-200'" class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all">All</button>
-                                    <button @click="tab = 'comments'" :class="tab === 'comments' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-gray-200'" class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all">Comments</button>
-                                    <button @click="tab = 'system'" :class="tab === 'system' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-gray-200'" class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all">System</button>
+                                <div class="flex p-1 bg-gray-900/50 rounded-xl gap-1 border border-gray-800">
+                                    <button @click="tab = 'all'" :class="tab === 'all' ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-500 hover:text-gray-300'" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">All</button>
+                                    <button @click="tab = 'comments'" :class="tab === 'comments' ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-500 hover:text-gray-300'" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">Comments</button>
+                                    <button @click="tab = 'system'" :class="tab === 'system' ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-500 hover:text-gray-300'" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">System</button>
                                 </div>
                             </div>
 
-                            <div class="max-h-96 overflow-y-auto custom-scrollbar bg-[#111827]">
+                            <div class="max-h-[450px] overflow-y-auto custom-scrollbar bg-[#111827]">
                                 @php
+                                    // Fetch notifications once, already sorted by time by Laravel default
                                     $allNotifications = Auth::user()->notifications()->take(30)->get();
-                                    $commentAlerts = $allNotifications->filter(fn($n) => in_array($n->data['type'] ?? '', ['mention', 'reply']));
-                                    $systemAlerts = $allNotifications->filter(fn($n) => !in_array($n->data['type'] ?? '', ['mention', 'reply']));
                                 @endphp
 
-                                <template x-if="tab === 'all' || tab === 'comments'">
-                                    <div>
-                                        @foreach($commentAlerts as $notification)
-                                            @php $isUnread = $notification->unread(); @endphp
-                                            <a href="{{ route('tickets.show', $notification->data['ticket_id']) }}"
-                                               class="flex flex-col p-5 hover:bg-gray-800/50 transition border-b border-gray-800/50 group relative {{ $isUnread ? 'bg-indigo-500/[0.02]' : 'opacity-60' }}">
-                                                @if($isUnread)
-                                                    <div class="absolute left-0 top-5 bottom-5 w-1 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
-                                                @endif
-                                                <div class="flex justify-between items-start mb-1.5">
-                                                    <span class="text-[10px] font-black {{ ($notification->data['type'] ?? '') === 'mention' ? 'text-red-400' : 'text-indigo-400' }} uppercase tracking-widest">
-                                                        {{ $notification->data['comment_user'] }} {{ ($notification->data['type'] ?? '') === 'mention' ? 'mentioned you' : 'replied' }}
+                                @forelse($allNotifications as $notification)
+                                    @php
+                                        $isUnread = $notification->unread();
+                                        $data = $notification->data;
+                                        $type = $data['type'] ?? 'ticket';
+
+                                        // Tab Logic
+                                        $isComment = in_array($type, ['mention', 'reply']);
+                                        $visibilityCondition = "tab === 'all' || (tab === 'comments' && " . ($isComment ? 'true' : 'false') . ") || (tab === 'system' && " . ($isComment ? 'false' : 'true') . ")";
+
+                                        // URL and Icon Logic
+                                        $url = isset($data['ticket_id']) ? route('tickets.show', $data['ticket_id']) : '#';
+                                        $icon = 'TI';
+                                        $title = $data['title'] ?? 'Ticket Updated';
+                                        $message = $data['message'] ?? (isset($data['ticket_id']) ? "#{$data['ticket_id']}: {$data['ticket_title']}" : '');
+
+                                        if ($type === 'welcome') {
+                                            $icon = '🎉'; $title = 'Welcome Alert'; $url = route('profile.edit');
+                                        } elseif ($type === 'admin_action') {
+                                            $icon = '👤'; $url = Auth::user()->role === 'admin' ? route('admin.accounts') : '#';
+                                        } elseif ($type === 'transferred') {
+                                            $icon = '📋';
+                                        }
+                                    @endphp
+
+                                    <div x-show="{{ $visibilityCondition }}">
+                                        <a href="{{ $url }}"
+                                           class="flex items-start gap-4 p-5 hover:bg-gray-800/40 transition border-b border-gray-800/50 group relative {{ $isUnread ? 'bg-indigo-500/[0.03]' : 'opacity-60' }}">
+
+                                            @if($isUnread)
+                                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]"></div>
+                                            @endif
+
+                                            <div class="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center text-[10px] font-black text-gray-500 group-hover:text-indigo-400 border border-gray-700 transition uppercase shrink-0">
+                                                {{ $isComment ? '💬' : $icon }}
+                                            </div>
+
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex justify-between items-center mb-1">
+                                                    <span class="text-[10px] font-black {{ $isComment ? ($type === 'mention' ? 'text-red-400' : 'text-indigo-400') : ($isUnread ? 'text-indigo-400' : 'text-gray-500') }} uppercase tracking-widest">
+                                                        {{ $isComment ? ucfirst($type) : $title }}
                                                     </span>
-                                                    <span class="text-[9px] text-gray-600 font-bold">{{ $notification->created_at->diffForHumans(null, true) }}</span>
+                                                    <span class="text-[9px] text-gray-600 font-bold uppercase">{{ $notification->created_at->diffForHumans(null, true) }}</span>
                                                 </div>
-                                                <p class="text-xs {{ $isUnread ? 'text-gray-200' : 'text-gray-500' }} font-bold group-hover:text-white truncate">#{{ $notification->data['ticket_id'] }}: {{ $notification->data['ticket_title'] }}</p>
-                                            </a>
-                                        @endforeach
+
+                                                @if($isComment)
+                                                    <h4 class="text-xs font-bold {{ $isUnread ? 'text-gray-100' : 'text-gray-400' }} group-hover:text-white transition leading-snug">
+                                                        {{ $data['comment_user'] }} in Ticket #{{ $data['ticket_id'] }}
+                                                    </h4>
+                                                    <p class="text-[10px] text-gray-500 font-bold truncate mt-1">{{ $data['ticket_title'] }}</p>
+                                                @else
+                                                    <p class="text-xs font-bold {{ $isUnread ? 'text-gray-200' : 'text-gray-400' }} group-hover:text-white transition leading-snug truncate" title="{{ $message }}">
+                                                        {{ $message }}
+                                                    </p>
+                                                @endif
+                                            </div>
+                                        </a>
                                     </div>
-                                </template>
-
-                                <template x-if="tab === 'all' || tab === 'system'">
-                                    <div>
-                                        @foreach($systemAlerts as $notification)
-                                            @php
-                                                $isUnread = $notification->unread();
-                                                $data = $notification->data;
-                                                $type = $data['type'] ?? 'ticket';
-
-                                                $url = isset($data['ticket_id']) ? route('tickets.show', $data['ticket_id']) : '#';
-                                                $icon = 'TI';
-                                                $title = $data['title'] ?? 'Ticket Updated';
-                                                $message = isset($data['ticket_id']) ? "#{$data['ticket_id']}: {$data['ticket_title']}" : ($data['message'] ?? '');
-
-                                                if ($type === 'welcome') {
-                                                    $icon = '🎉';
-                                                    $title = 'Welcome Alert';
-                                                    $message = "Account created by {$data['admin_name']}";
-                                                    $url = route('profile.edit');
-                                                } elseif ($type === 'admin_action') {
-                                                    $icon = '👤';
-                                                    $title = "Admin Activity: {$data['action']}";
-                                                    $message = $data['message'];
-                                                    $url = Auth::user()->role === 'admin' ? route('admin.accounts') : '#';
-                                                }
-                                            @endphp
-                                            <a href="{{ $url }}"
-                                               class="flex items-center gap-4 p-5 hover:bg-gray-800/50 transition border-b border-gray-800/50 group {{ $isUnread ? '' : 'opacity-60' }}">
-                                                <div class="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center text-[10px] font-black text-gray-500 group-hover:text-indigo-400 border border-transparent transition uppercase">{{ $icon }}</div>
-                                                <div class="flex-1">
-                                                    <div class="flex justify-between items-center">
-                                                        <span class="text-xs font-black {{ $isUnread ? 'text-gray-200' : 'text-gray-500' }} group-hover:text-white uppercase tracking-tight">{{ $title }}</span>
-                                                        <span class="text-[9px] text-gray-600 font-bold">{{ $notification->created_at->diffForHumans(null, true) }}</span>
-                                                    </div>
-                                                    <p class="text-[10px] text-gray-500 font-bold truncate mt-0.5" title="{{ $message }}">{{ $message }}</p>
-                                                </div>
-                                            </a>
-                                        @endforeach
+                                @empty
+                                    <div class="py-20 text-center">
+                                        <p class="text-[10px] text-gray-600 uppercase tracking-[0.3em] font-black">All caught up</p>
                                     </div>
-                                </template>
-
-                                @if($allNotifications->count() == 0)
-                                    <div class="py-16 text-center text-gray-600 italic text-[10px] uppercase tracking-[0.3em] font-black">All caught up</div>
-                                @endif
+                                @endforelse
                             </div>
 
-                            <a href="{{ route('notifications.index') }}" @click.stop class="block py-4 text-center text-[10px] font-black text-white bg-gray-800 hover:bg-gray-700 transition uppercase tracking-[0.2em]">
+                            <a href="{{ route('notifications.index') }}" @click.stop class="block py-4 text-center text-[10px] font-black text-white bg-gray-900/80 hover:bg-gray-800 transition uppercase tracking-[0.2em] border-t border-gray-800">
                                 View all history
                             </a>
                         </div>
@@ -170,32 +168,20 @@
                         </x-slot>
 
                         <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')">
-                                {{ __('Profile Settings') }}
-                            </x-dropdown-link>
-                            <x-dropdown-link :href="route('my.performance')">
-                                {{ __('My Performance') }}
-                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('profile.edit')">{{ __('Profile Settings') }}</x-dropdown-link>
+                            <x-dropdown-link :href="route('my.performance')">{{ __('My Performance') }}</x-dropdown-link>
                             <div class="border-t border-gray-800"></div>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <x-dropdown-link :href="route('logout')"
-                                        onclick="event.preventDefault();
-                                                    this.closest('form').submit();">
-                                    {{ __('Log Out') }}
-                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('Log Out') }}</x-dropdown-link>
                             </form>
                         </x-slot>
                     </x-dropdown>
                 @else
                     <div class="flex items-center gap-4">
-                        <x-nav-link :href="route('login')" :active="request()->routeIs('login')">
-                            {{ __('Log In') }}
-                        </x-nav-link>
+                        <x-nav-link :href="route('login')">{{ __('Log In') }}</x-nav-link>
                         @if (Route::has('register'))
-                            <x-nav-link :href="route('register')" :active="request()->routeIs('register')">
-                                {{ __('Register') }}
-                            </x-nav-link>
+                            <x-nav-link :href="route('register')">{{ __('Register') }}</x-nav-link>
                         @endif
                     </div>
                 @endauth

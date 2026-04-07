@@ -9,7 +9,7 @@ use App\Models\UserStatusLog;
 use App\Models\UserDeleteLog;
 use App\Models\Ticket;
 use App\Notifications\WelcomeStaffNotification;
-use App\Notifications\AdminActivityNotification; // Ensure this notification class exists
+use App\Notifications\AdminActivityNotification;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,6 +20,7 @@ class AdminController extends Controller
      */
     private function notifyAdmins($notification)
     {
+        // Get all admins except the one performing the action (optional: remove the check to include self)
         $admins = User::where('role', 'admin')->get();
         foreach ($admins as $admin) {
             $admin->notify($notification);
@@ -72,15 +73,16 @@ class AdminController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
+            'is_active' => true, // Ensure the account is active immediately
         ]);
 
-        // 1. Notify the new staff member
+        // 1. Notify the new staff member via Email/System
         $user->notify(new WelcomeStaffNotification($user, Auth::user()->name));
 
-        // 2. Notify all admins of the new account creation
+        // 2. Notify all admins of the new account creation in the system bell
         $this->notifyAdmins(new AdminActivityNotification('created', $user, Auth::user()->name));
 
-        return redirect()->route('admin.accounts')->with('success', 'User account created successfully!');
+        return redirect()->route('admin.accounts')->with('success', 'User account created successfully and is now active!');
     }
 
     public function createAccount()

@@ -24,12 +24,24 @@ class AdminActivityNotification extends Notification
 
     public function toArray($notifiable)
     {
+        $targetName = $this->targetUser['name'] ?? $this->targetUser->name;
+
+        // Map the internal action keywords to professional titles
+        $titles = [
+            'created' => 'New Account Created',
+            'updated' => 'Account Modified',
+            'activated' => 'Account Activated',
+            'deactivated' => 'Account Deactivated',
+            'permanently deleted' => 'Account Purged'
+        ];
+
         return [
             'type' => 'admin_action',
+            'title' => $titles[$this->action] ?? 'Admin Activity',
             'action' => $this->action,
-            'target_name' => $this->targetUser['name'] ?? $this->targetUser->name,
+            'target_name' => $targetName,
             'admin_name' => $this->adminName,
-            'message' => "Admin {$this->adminName} has {$this->action} the account: " . ($this->targetUser['name'] ?? $this->targetUser->name),
+            'message' => "Admin {$this->adminName} has successfully {$this->action} the account for {$targetName}.",
         ];
     }
 }

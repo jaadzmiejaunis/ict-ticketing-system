@@ -278,6 +278,7 @@ class TicketController extends Controller
 
         $newAssignee = User::find($request->new_user_id);
         if ($newAssignee) {
+            // This line sends the notification we customized above
             $newAssignee->notify(new TicketUpdateNotification($ticket, 'transferred', Auth::user()->name));
         }
 
@@ -345,5 +346,17 @@ class TicketController extends Controller
 
         $ticket->restore();
         return redirect()->route('tickets.index')->with('success', 'Ticket restored successfully!');
+    }
+
+    public function resumeTask(Ticket $ticket)
+    {
+        // Authorization: Only the assignee or an admin can resume the task
+        if (Auth::id() !== $ticket->assigned_to && strtolower(Auth::user()->role) !== 'admin') {
+            abort(403);
+        }
+
+        $ticket->update(['status' => 'Assigned']);
+
+        return back()->with('success', 'Ticket resumed and set back to Assigned.');
     }
 }

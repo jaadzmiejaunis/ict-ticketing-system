@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/{ticket}/unassign', [TicketController::class, 'unassignTask'])->name('tickets.unassign');
     Route::post('/tickets/{ticket}/transfer', [TicketController::class, 'transferTask'])->name('tickets.transfer');
     Route::post('/tickets/{ticket}/resolve', [TicketController::class, 'resolveTask'])->name('tickets.resolve');
+    Route::post('/tickets/{ticket}/resume', [TicketController::class, 'resumeTask'])->name('tickets.resume');
     Route::post('/tickets/{ticket}/undo-resolve', [TicketController::class, 'undoResolve'])->name('tickets.undo-resolve');
     Route::post('tickets/{ticket}/comments', [TicketCommentController::class, 'store'])->name('tickets.comments.store');
 
