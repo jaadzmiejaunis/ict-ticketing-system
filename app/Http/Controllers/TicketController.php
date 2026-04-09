@@ -191,9 +191,9 @@ class TicketController extends Controller
         ];
 
         $pdf = Pdf::loadView('tickets.pdf_report', compact('imageData', 'stats', 'monthlyTickets', 'targetDate'));
-        $pdf->setPaper('A4', 'landscape');
+        $pdf->setPaper('A4', 'potrait');
 
-        return $pdf->download('ICT_Monthly_Report_'.$targetDate->format('M_Y').'.pdf');
+        return $pdf->download('GayaCare_Monthly_Report_'.$targetDate->format('M_Y').'.pdf');
     }
 
     public function calendar()

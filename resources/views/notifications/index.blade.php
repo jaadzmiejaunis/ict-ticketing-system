@@ -1,99 +1,116 @@
 <x-app-layout>
-    <div class="py-12 bg-[#0f172a] min-h-screen">
-        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-12">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
 
-            <div class="flex justify-between items-center mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 transition-colors">
                 <div>
-                    <h1 class="text-2xl font-black text-white uppercase tracking-tight">System Activity Log</h1>
-                    <p class="text-sm text-gray-400 mt-1">Track updates, assignments, and admin actions.</p>
+                    <h2 class="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight transition-colors">Notification History</h2>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mt-1 transition-colors">A complete record of your system alerts and discussion mentions.</p>
                 </div>
 
-                <div class="flex gap-3">
+                @if(Auth::user()->unreadNotifications->count() > 0)
                     <form action="{{ route('notifications.readAll') }}" method="POST">
                         @csrf
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold transition shadow-lg text-xs uppercase tracking-widest active:scale-95">
-                            Mark All as Read
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold transition shadow-md text-xs uppercase tracking-widest active:scale-95 border border-transparent">
+                            Mark All As Read
                         </button>
                     </form>
-                    <a href="{{ route('dashboard') }}" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-6 py-2.5 rounded-lg font-bold transition text-xs uppercase tracking-widest border border-gray-700">
-                        Dashboard
-                    </a>
-                </div>
+                @endif
             </div>
 
-            <div class="bg-[#111827] rounded-2xl shadow-2xl border border-gray-800 overflow-hidden">
-                <div class="divide-y divide-gray-800/50">
-                    @forelse($allNotifications as $noti)
+            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
+                <div class="divide-y divide-gray-100 dark:divide-gray-700 transition-colors">
+
+                    @php
+                        // Paginated notifications from the user
+                        $notifications = Auth::user()->notifications()->paginate(15);
+                    @endphp
+
+                    @forelse($notifications as $notification)
                         @php
-                            // Handle both Object (Model) and Array formats safely
-                            $isModel = is_object($noti);
+                            $isUnread = $notification->unread();
+                            $data = $notification->data;
+                            $type = $data['type'] ?? 'ticket';
+                            $isComment = in_array($type, ['mention', 'reply']);
 
-                            // Extract Data Safely
-                            $rawData = $isModel ? $noti->data : ($noti['data'] ?? []);
-                            $data = is_string($rawData) ? json_decode($rawData, true) : $rawData;
-
-                            // Extract Status Safely
-                            $isUnread = $isModel ? $noti->unread() : is_null($noti['read_at'] ?? null);
-
-                            // Extract Date Safely
-                            $createdAt = $isModel ? $noti->created_at : \Carbon\Carbon::parse($noti['created_at'] ?? now());
-
-                            // Determine route based on data
-                            $targetRoute = isset($data['ticket_id'])
-                                ? route('tickets.show', $data['ticket_id'])
-                                : route('admin.accounts');
-
-                            // Determine Icon
+                            $url = isset($data['ticket_id']) ? route('tickets.show', $data['ticket_id']) : '#';
                             $icon = 'TI';
-                            if (($data['type'] ?? '') === 'welcome') $icon = '🎉';
-                            if (($data['type'] ?? '') === 'admin_action') $icon = '👤';
+                            $title = $data['title'] ?? 'Ticket Updated';
+                            $message = $data['message'] ?? (isset($data['ticket_id']) ? "#{$data['ticket_id']}: {$data['ticket_title']}" : '');
+
+                            if ($type === 'welcome') {
+                                $icon = '🎉';
+                                $title = 'Welcome Alert';
+                                $url = route('profile.edit');
+                            } elseif ($type === 'admin_action') {
+                                $icon = '👤';
+                                $url = Auth::user()->role === 'admin' ? route('admin.accounts') : '#';
+                            }
                         @endphp
 
-                        <div onclick="window.location='{{ $targetRoute }}'"
-                             class="relative p-6 cursor-pointer hover:bg-gray-800/40 transition group flex gap-6 items-center {{ $isUnread ? 'bg-gray-800/20' : 'opacity-50 grayscale-[0.2]' }}">
+                        <div class="relative group">
+                            <a href="{{ $url }}" class="flex items-start gap-5 p-6 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-all {{ $isUnread ? 'bg-indigo-50/30 dark:bg-indigo-500/[0.03]' : 'opacity-70' }}">
 
-                            @if($isUnread)
-                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[2px_0_10px_rgba(59,130,246,0.5)]"></div>
-                            @endif
+                                @if($isUnread)
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 dark:bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]"></div>
+                                @endif
 
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-500 font-bold text-sm">
-                                    {{ $icon }}
-                                </div>
-                            </div>
-
-                            <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-start mb-1">
-                                    <h3 class="text-sm font-black text-white uppercase tracking-wide">
-                                        @if(($data['type'] ?? '') === 'welcome') Welcome Alert
-                                        @elseif(($data['type'] ?? '') === 'admin_action') Admin Activity
-                                        @else Ticket Update @endif
-                                    </h3>
-                                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{{ $createdAt->diffForHumans() }}</span>
+                                <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-lg font-black text-gray-400 dark:text-gray-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 border border-gray-200 dark:border-gray-700 transition-all shrink-0">
+                                    {{ $isComment ? '💬' : $icon }}
                                 </div>
 
-                                <p class="text-sm text-gray-400 font-medium mb-3">{{ $data['message'] ?? 'Action performed' }}</p>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-[10px] font-black {{ $isComment ? ($type === 'mention' ? 'text-red-500' : 'text-indigo-600') : ($isUnread ? 'text-indigo-600' : 'text-gray-500') }} dark:{{ $isComment ? ($type === 'mention' ? 'text-red-400' : 'text-indigo-400') : ($isUnread ? 'text-indigo-400' : 'text-gray-400') }} uppercase tracking-[0.15em] transition-colors">
+                                            {{ $isComment ? ucfirst($type) : $title }}
+                                        </span>
+                                        <span class="text-[10px] text-gray-400 dark:text-gray-600 font-bold uppercase transition-colors">{{ $notification->created_at->diffForHumans() }}</span>
+                                    </div>
 
-                                <div class="flex items-center gap-3">
-                                    <span class="px-2 py-0.5 rounded bg-gray-800 border border-gray-700 text-[9px] font-black text-gray-400 uppercase">
-                                        {{ strtoupper(str_replace('_', ' ', $data['type'] ?? 'System')) }}
-                                    </span>
-                                    @if(isset($data['admin_name']))
-                                        <span class="text-[10px] text-gray-500">Action by <strong class="text-gray-300">{{ $data['admin_name'] }}</strong></span>
+                                    @if($isComment)
+                                        <h4 class="text-sm font-bold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-white transition leading-snug">
+                                            {{ $data['comment_user'] ?? 'Someone' }} mentioned you in Ticket #{{ $data['ticket_id'] ?? '???' }}
+                                        </h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-500 font-medium truncate mt-1 italic transition-colors">
+                                            "{{ $data['ticket_title'] ?? '' }}"
+                                        </p>
+                                    @else
+                                        <p class="text-sm font-bold text-gray-900 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-white transition leading-snug truncate" title="{{ $message }}">
+                                            {{ $message }}
+                                        </p>
                                     @endif
                                 </div>
-                            </div>
 
-                            <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition">
-                                <span class="text-indigo-400 text-xs font-bold uppercase tracking-widest">View Details &rarr;</span>
-                            </div>
+                                <div class="hidden sm:flex items-center self-center text-gray-300 dark:text-gray-700 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                </div>
+                            </a>
                         </div>
+
                     @empty
                         <div class="py-24 text-center">
-                            <p class="text-gray-500 font-bold italic">No activity recorded yet.</p>
+                            <div class="w-20 h-20 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-200 dark:border-gray-700 transition-colors">
+                                <svg class="w-10 h-10 text-gray-300 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                            </div>
+                            <h3 class="text-sm font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em] transition-colors">No notifications yet</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-700 mt-2 transition-colors">System and comment alerts will appear here as they happen.</p>
                         </div>
                     @endforelse
+
                 </div>
+
+                @if($notifications->hasPages())
+                    <div class="p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 transition-colors">
+                        {{ $notifications->links() }}
+                    </div>
+                @endif
+            </div>
+
+            <div class="mt-8 text-center">
+                <a href="{{ route('dashboard') }}" class="text-gray-500 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back to System Home
+                </a>
             </div>
         </div>
     </div>

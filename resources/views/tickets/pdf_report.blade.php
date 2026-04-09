@@ -2,170 +2,257 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ICT Monthly Complaint Report</title>
+    <title>GayaCare Monthly Report</title>
     <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: #333;
-            margin: 0;
-            padding: 30px;
-            font-size: 12px;
+        /* 1. COMPREHENSIVE FONT DEFINITIONS (Instrument Sans) */
+        @font-face {
+            font-family: 'Instrument Sans';
+            font-style: normal;
+            font-weight: 400;
+            src: url(https://fonts.gstatic.com/s/instrumentsans/v1/9XUh8at6W5E5_hGRzS6GrS9E9WdfG0_l.ttf) format('truetype');
         }
-        /* Header Layout */
-        .header {
-            border-bottom: 2px solid #2563eb;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            width: 100%;
+        @font-face {
+            font-family: 'Instrument Sans';
+            font-style: normal;
+            font-weight: 600;
+            src: url(https://fonts.gstatic.com/s/instrumentsans/v1/9XUh8at6W5E5_hGRzS6G0S9E9WdfG0_l.ttf) format('truetype');
         }
-        table.header-table { width: 100%; border: none; }
-        table.header-table td { border: none; padding: 0; vertical-align: bottom; }
-        .header h1 { margin: 0; color: #1e293b; font-size: 24px; }
-        .meta-data { color: #64748b; font-size: 12px; margin-top: 5px; }
+        @font-face {
+            font-family: 'Instrument Sans';
+            font-style: normal;
+            font-weight: 800;
+            src: url(https://fonts.gstatic.com/s/instrumentsans/v1/9XUh8at6W5E5_hGRzS6G6S9E9WdfG0_l.ttf) format('truetype');
+        }
 
-        /* Summary Cards (Crisp HTML Text) */
-        table.summary-container {
-            width: 100%;
-            margin-bottom: 20px;
-            border-spacing: 10px; /* Creates gaps between cards */
-            border-collapse: separate;
+        /* 2. GLOBAL RESET */
+        @page { margin: 0; }
+        * {
+            font-family: 'Instrument Sans', sans-serif !important;
+            -webkit-font-smoothing: antialiased;
         }
-        .summary-card {
+
+        body {
+            color: #1e293b;
+            margin: 0;
+            padding: 45px;
+            font-size: 11px;
+            line-height: 1.4;
+            background-color: #fff;
+        }
+
+        /* 3. CORPORATE HEADER (Refined consistency) */
+        .header-container {
+            border-bottom: 4px solid #4f46e5;
+            padding-bottom: 20px;
+            margin-bottom: 35px;
+        }
+        .report-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: -0.8px; /* Tight tracking matching system UI */
+            margin: 0;
+            line-height: 1;
+        }
+        .meta-table { width: 100%; margin-top: 15px; }
+        .meta-table td { padding: 0; font-size: 10px; color: #64748b; font-weight: 400; }
+
+        /* 4. SUMMARY GRID (The "Total Tickets" Row) */
+        .summary-grid {
+            width: 100%;
+            margin-bottom: 40px;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .summary-box {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 15px;
+            padding: 22px 10px;
             text-align: center;
             width: 20%;
         }
-        .summary-card .label { font-weight: bold; color: #64748b; text-transform: uppercase; font-size: 10px; }
-        .summary-card .value { font-size: 24px; font-weight: bold; color: #0f172a; margin-top: 5px; }
-        .summary-card.open .value { color: #16a34a; }
-        .summary-card.assigned .value { color: #2563eb; }
-        .summary-card.resolved .value { color: #94a3b8; }
+        .summary-box .label {
+            font-size: 8px;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .summary-box .value {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+        }
 
-        /* Charts Image Container */
-        .charts-container {
+        /* Specific status colors */
+        .border-total { border-top: 4px solid #4f46e5; }
+        .border-open { border-top: 4px solid #16a34a; }
+        .border-assigned { border-top: 4px solid #2563eb; }
+        .border-hold { border-top: 4px solid #eab308; }
+        .border-resolved { border-top: 4px solid #94a3b8; }
+
+        /* 5. CHART SECTION (Matching Graph font labels) */
+        .charts-section {
+            background-color: #f8fafc;
+            padding: 30px;
+            border-radius: 20px;
             text-align: center;
-            background-color: #1a1d24; /* Matches the dark theme of the capture */
-            padding: 15px;
-            border-radius: 8px;
             margin-bottom: 30px;
+            border: 1px solid #e2e8f0;
+        }
+        .section-label {
+            text-align: left;
+            font-weight: 800;
+            color: #475569;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            letter-spacing: 1.5px;
+            margin-top: 0;
         }
         .charts-image {
-            max-width: 100%;
-            height: auto;
-            max-height: 300px;
+            width: 100%;
+            max-height: 440px;
             object-fit: contain;
         }
 
-        /* Detailed Log Table */
-        table.data-table {
+        /* 6. DETAILED DATA TABLE */
+        .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
         }
-        table.data-table th, table.data-table td {
-            border: 1px solid #cbd5e1;
-            padding: 10px;
+        .data-table th {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 14px 12px;
             text-align: left;
         }
-        table.data-table th { background-color: #f1f5f9; color: #334155; font-weight: bold; }
-        table.data-table tr:nth-child(even) { background-color: #f8fafc; }
+        .data-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            font-size: 10px;
+            font-weight: 400;
+        }
+        .data-table tr:nth-child(even) { background-color: #fcfdfe; }
+        .text-bold { font-weight: 800; }
+        .text-indigo { color: #4f46e5; }
 
+        /* 7. FOOTER */
+        .footer {
+            position: fixed;
+            bottom: 25px;
+            left: 45px;
+            right: 45px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+            text-align: center;
+            font-size: 8px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 800;
+        }
         .page-break { page-break-before: always; }
-        .footer { position: fixed; bottom: -10px; width: 100%; text-align: center; font-size: 10px; color: #94a3b8; }
     </style>
 </head>
 <body>
 
     <div class="footer">
-        Generated by ICT Ticketing System | {{ now()->format('Y') }}
+        GayaCare Support System — Page <span class="pagenum"></span>
     </div>
 
-    <div class="header">
-        <table class="header-table">
+    <div class="header-container">
+        <h1 class="report-title">Monthly Performance Report</h1>
+        <table class="meta-table">
             <tr>
-                <td>
-                    <h1>ICT Monthly Complaint Report</h1>
-                    <div class="meta-data">Reporting Period: <strong>{{ $targetDate->format('F Y') }}</strong></div>
+                <td style="width: 55%;">
+                    Reporting Period: <span class="text-bold" style="color: #0f172a;">{{ $targetDate->format('F Y') }}</span><br>
+                    Department: <span class="text-bold" style="color: #0f172a;">ICT Support Unit</span>
                 </td>
                 <td style="text-align: right;">
-                    <div class="meta-data">Generated On: <strong>{{ now()->format('d M Y, h:i A') }}</strong></div>
-                    <div class="meta-data">Department: IT Support</div>
+                    Generated On: <span class="text-bold" style="color: #0f172a;">{{ now()->format('d M Y, h:i A') }}</span><br>
+                    Identity: <span class="text-bold" style="color: #0f172a;">GayaCare Support</span>
                 </td>
             </tr>
         </table>
     </div>
 
-    <table class="summary-container">
+    <table class="summary-grid">
         <tr>
-            <td class="summary-card">
-                <div class="label">Total Tickets</div>
-                <div class="value">{{ $stats['total'] }}</div>
+            <td class="summary-box border-total">
+                <span class="label">Total Tickets</span>
+                <span class="value">{{ $stats['total'] }}</span>
             </td>
-            <td class="summary-card open">
-                <div class="label">Open</div>
-                <div class="value">{{ $stats['open'] }}</div>
+            <td class="summary-box border-open">
+                <span class="label">Open</span>
+                <span class="value" style="color: #16a34a;">{{ $stats['open'] }}</span>
             </td>
-            <td class="summary-card assigned">
-                <div class="label">Assigned</div>
-                <div class="value">{{ $stats['assigned'] }}</div>
+            <td class="summary-box border-assigned">
+                <span class="label">Assigned</span>
+                <span class="value" style="color: #2563eb;">{{ $stats['assigned'] }}</span>
             </td>
-            <td class="summary-card">
-                <div class="label">On Hold</div>
-                <div class="value">{{ $stats['on_hold'] }}</div>
+            <td class="summary-box border-hold">
+                <span class="label">On Hold</span>
+                <span class="value" style="color: #ca8a04;">{{ $stats['on_hold'] }}</span>
             </td>
-            <td class="summary-card resolved">
-                <div class="label">Resolved</div>
-                <div class="value">{{ $stats['resolved'] }}</div>
+            <td class="summary-box border-resolved">
+                <span class="label">Resolved</span>
+                <span class="value" style="color: #64748b;">{{ $stats['resolved'] }}</span>
             </td>
         </tr>
     </table>
 
-    <div class="charts-container">
-        <img src="{{ $imageData }}" class="charts-image" alt="Charts">
+    <div class="charts-section">
+        <h2 class="section-label">Analytical Overview</h2>
+        <img src="{{ $imageData }}" class="charts-image" alt="Visual Analytics">
     </div>
 
     <div class="page-break"></div>
 
-    <div class="header" style="margin-top: 20px;">
-        <table class="header-table">
-            <tr>
-                <td>
-                    <h1>Detailed Ticket Log</h1>
-                    <div class="meta-data">Reporting Period: {{ $targetDate->format('F Y') }}</div>
-                </td>
-            </tr>
-        </table>
+    <div class="header-container" style="border-bottom-width: 2px;">
+        <h2 class="report-title" style="font-size: 18px;">Detailed Audit Log</h2>
+        <p style="margin: 5px 0 0; color: #64748b; font-size: 10px; font-weight: 400;">Comprehensive record of reported issues for {{ $targetDate->format('F Y') }}</p>
     </div>
 
     <table class="data-table">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Reporter</th>
-                <th>Issue</th>
+                <th style="width: 45px;">ID</th>
+                <th>Complainant</th>
+                <th>Issue Subject</th>
                 <th>Category</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Date</th>
+                <th style="width: 55px;">Priority</th>
+                <th style="width: 65px;">Status</th>
+                <th style="width: 75px;">Logged Date</th>
             </tr>
         </thead>
         <tbody>
             @forelse($monthlyTickets as $ticket)
             <tr>
-                <td>#{{ $ticket->id }}</td>
-                <td>{{ $ticket->reporter_name }}</td>
+                <td class="text-bold text-indigo">#{{ $ticket->id }}</td>
+                <td class="text-bold">{{ $ticket->reporter_name }}</td>
                 <td>{{ $ticket->title }}</td>
                 <td>{{ $ticket->category }}</td>
-                <td>{{ $ticket->priority }}</td>
-                <td>{{ $ticket->status }}</td>
+                <td>
+                    <span class="text-bold" style="font-size: 8px; color: {{ $ticket->priority == 'High' ? '#be123c' : ($ticket->priority == 'Medium' ? '#d97706' : '#059669') }}">
+                        {{ $ticket->priority }}
+                    </span>
+                </td>
+                <td class="text-bold">{{ $ticket->status }}</td>
                 <td>{{ $ticket->created_at->format('d/m/Y') }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" style="text-align: center;">No tickets recorded for this month.</td>
+                <td colspan="7" style="text-align: center; padding: 50px; color: #94a3b8; font-weight: 600;">No analytical data found for this reporting cycle.</td>
             </tr>
             @endforelse
         </tbody>
