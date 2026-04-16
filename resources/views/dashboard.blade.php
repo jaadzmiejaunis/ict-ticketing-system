@@ -1,13 +1,16 @@
 <x-app-layout>
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors">Home</h1>
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Home</h1>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mt-1 transition-colors">
+                    Select a quick action below to manage your ICT support requests or track your recent activity.
+                </p>
             </div>
 
             <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm sm:rounded-lg p-8 transition-colors">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">Welcome back, {{ Auth::user()->name }}! 👋</h1>
-                <p class="text-gray-600 dark:text-gray-400 mb-8 transition-colors">You are logged into the ICT Ticketing System. What would you like to do today?</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-8 transition-colors">You are logged into the GayaCare Support. What would you like to do today?</p>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 

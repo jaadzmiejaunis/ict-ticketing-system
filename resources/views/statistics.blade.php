@@ -2,9 +2,14 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
-                    Visual Statistics Dashboard <span class="text-indigo-600 dark:text-indigo-400 text-lg ml-2">({{ $stats['month_name'] }})</span>
-                </h2>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight transition-colors">
+                        Visual Statistics Dashboard <span class="text-indigo-600 dark:text-indigo-400 text-lg ml-2">({{ $stats['month_name'] }})</span>
+                    </h2>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mt-1 transition-colors">
+                        Review analytical charts and monthly metrics. Choose a month to generate a detailed performance report.
+                    </p>
+                </div>
                 <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
 
                     <form method="GET" action="{{ route('statistics') }}" class="flex items-center m-0">

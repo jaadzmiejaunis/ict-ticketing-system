@@ -1,10 +1,14 @@
 <x-app-layout>
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class ="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors">Ticket Management</h1>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mt-1 transition-colors">
+                    Browse and filter the full list of support requests. Click on any ticket subject to view its detail and actions.
+                </p>
+            </div>
 
             <div class="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors">Ticket Management</h1>
-
                 <div class="flex flex-wrap items-center gap-3">
                     @if(request('filter') || request('search') || request('status') || request('priority'))
                         <a href="{{ route('tickets.index') }}"
