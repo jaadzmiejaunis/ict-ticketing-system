@@ -12,6 +12,7 @@ use App\Notifications\WelcomeStaffNotification;
 use App\Notifications\AdminActivityNotification;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -161,25 +162,34 @@ class AdminController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'role' => 'required|in:admin,staff',
+            'name'   => 'required|string|max:255',
+            'email'  => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'role'   => 'required|in:admin,staff',
             'password' => 'nullable|string|min:8|confirmed',
+            'avatar' => 'nullable|image|mimes:jpg,png,jpeg,webp|max:2048', // Validation for image
         ]);
 
         $dataToUpdate = [
-            'name' => $request->name,
+            'name'  => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
+            'role'  => $request->role,
         ];
 
         if ($request->filled('password')) {
             $dataToUpdate['password'] = Hash::make($request->password);
         }
 
+        // Handle Avatar Upload
+        if ($request->hasFile('avatar')) {
+            // Delete old avatar if it exists
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $dataToUpdate['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
         $user->update($dataToUpdate);
 
-        // Notify admins that an account was updated
         $this->notifyAdmins(new AdminActivityNotification('updated', $user, Auth::user()->name));
 
         return redirect()->route('admin.accounts')->with('success', 'Account updated successfully!');

@@ -1,46 +1,124 @@
-<section class="space-y-6">
-    <header>
-        <h2 class="text-lg font-black text-red-600 dark:text-red-500 uppercase tracking-widest transition-colors">
-            {{ __('Delete Account') }}
-        </h2>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 transition-colors">
-            {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Please download any data you wish to retain.') }}
-        </p>
-    </header>
+<x-app-layout>
+    @section('title', 'Edit User Account')
 
-    <button x-data="" x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
-            class="bg-red-600 hover:bg-red-700 text-white px-10 py-3 rounded-lg text-xs font-black uppercase tracking-[0.2em] transition shadow-lg active:scale-95 border border-transparent">
-        {{ __('Delete Account') }}
-    </button>
+    <div class="py-12">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
 
-    <x-modal name="confirm-user-deletion" :show="$errors->userDeletion->isNotEmpty()" focusable>
-        <form method="post" action="{{ route('profile.destroy') }}" class="p-6 transition-colors">
-            @csrf
-            @method('delete')
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700 transition-colors">
 
-            <h2 class="text-lg font-black text-gray-900 dark:text-white uppercase tracking-widest transition-colors">
-                {{ __('Are you sure you want to delete your account?') }}
-            </h2>
+                <div class="p-6 sm:p-8 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 transition-colors">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors">Edit User Account</h1>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mt-1 transition-colors">
+                                Updating profile for <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ $user->name }}</span>
+                            </p>
+                        </div>
+                        <a href="{{ route('admin.accounts') }}" class="inline-flex items-center justify-center bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-5 py-2.5 rounded-md font-bold transition shadow-sm text-sm uppercase tracking-wider border border-gray-300 dark:border-gray-600">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                            Back to Users
+                        </a>
+                    </div>
+                </div>
 
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 transition-colors">
-                {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.') }}
-            </p>
+                <form action="{{ route('admin.accounts.update', $user) }}" method="POST" enctype="multipart/form-data" class="p-6 sm:p-8 space-y-8">
+                    @csrf
+                    @method('PUT')
 
-            <div class="mt-6">
-                <x-input-label for="password" value="{{ __('Password') }}" class="sr-only" />
-                <x-text-input id="password" name="password" type="password" class="mt-1 block w-3/4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 transition-colors" placeholder="{{ __('Password') }}" />
-                <x-input-error :messages="$errors->userDeletion->get('password')" class="mt-2" />
+                    <div class="flex flex-col sm:flex-row items-start gap-8 pb-8 border-b border-gray-100 dark:border-gray-700 transition-colors">
+                        <div class="shrink-0">
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-3 transition-colors">Profile Image</label>
+                            <div class="relative group">
+                                <img id="preview" src="{{ $user->avatar ? asset('storage/' . $user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=4f46e5&color=fff' }}"
+                                     class="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-md transition-colors" alt="Avatar">
+                                <div class="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-grow">
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-1 transition-colors">Upload New Avatar</label>
+                            <input type="file" name="avatar" onchange="previewImage(event)"
+                                   class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:uppercase file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 transition-colors">
+                            <p class="mt-2 text-[10px] text-gray-500 dark:text-gray-500 uppercase font-bold transition-colors">Supported: JPG, PNG, WEBP (Max 2MB)</p>
+                            <x-input-error :messages="$errors->get('avatar')" class="mt-2" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-1 transition-colors">Full Name</label>
+                            <input type="text" name="name" value="{{ old('name', $user->name) }}" required
+                                   class="block w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-1 transition-colors">Email Address</label>
+                            <input type="email" name="email" value="{{ old('email', $user->email) }}" required
+                                   class="block w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-1 transition-colors">Account Role</label>
+                            <select name="role" class="block w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                <option value="staff" {{ old('role', $user->role) === 'staff' ? 'selected' : '' }}>Technician</option>
+                                <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Administrator</option>
+                            </select>
+                            <x-input-error :messages="$errors->get('role')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-1 transition-colors">Login Status</label>
+                            <div class="mt-2">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase border tracking-tight {{ $user->is_active ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border-green-200 dark:border-green-700/50' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-700/50' }} transition-colors">
+                                    {{ $user->is_active ? 'Account Active' : 'Account Deactivated' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-8 border-t border-gray-100 dark:border-gray-700 transition-colors">
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight mb-1 transition-colors">Reset User Password</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-6 transition-colors">Leave these fields blank if you do not want to change the password.</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase mb-1 transition-colors">New Password</label>
+                                <input type="password" name="password"
+                                       class="block w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase mb-1 transition-colors">Confirm Password</label>
+                                <input type="password" name="password_confirmation"
+                                       class="block w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 transition-colors">
+                        <button type="submit" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-3 rounded-md font-bold transition shadow-md text-sm uppercase tracking-wider active:scale-95 border border-transparent">
+                            Save Account Changes
+                        </button>
+                    </div>
+                </form>
             </div>
+        </div>
+    </div>
 
-            <div class="mt-6 flex justify-end gap-3 transition-colors">
-                <x-secondary-button x-on:click="$dispatch('close')" class="dark:bg-gray-700 dark:text-white transition-colors">
-                    {{ __('Cancel') }}
-                </x-secondary-button>
-
-                <x-danger-button class="ms-3 transition-colors">
-                    {{ __('Delete Account') }}
-                </x-danger-button>
-            </div>
-        </form>
-    </x-modal>
-</section>
+    <script>
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function() {
+                var output = document.getElementById('preview');
+                output.src = reader.result;
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+    </script>
+</x-app-layout>
