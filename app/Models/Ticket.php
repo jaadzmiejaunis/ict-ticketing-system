@@ -23,6 +23,7 @@ class Ticket extends Model
         'assigned_to',
         'assigned_by',
         'resolved_by',
+        'media_path'
     ];
 
     // Relationship: A ticket belongs to a User (Staff)

@@ -59,6 +59,11 @@
                         </div>
                     </div>
 
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Attachment (Photo/Video)</label>
+                        <input type="file" name="media" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-gray-700 dark:file:text-gray-300">
+                    </div>
+
                     <div class="flex items-center gap-5 border-t border-gray-200 dark:border-gray-700 pt-6 transition-colors">
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-md font-bold transition shadow-sm text-sm uppercase tracking-wider active:scale-95 border border-transparent">
                             Submit Ticket

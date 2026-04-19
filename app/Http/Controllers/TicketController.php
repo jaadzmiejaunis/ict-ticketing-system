@@ -68,7 +68,12 @@ class TicketController extends Controller
             'priority'      => 'required|in:Low,Medium,High',
             'category'      => 'required|in:Hardware,Software,Network',
             'due_date'      => 'nullable|date',
+            'media'         => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi|max:20480', // 20MB limit
         ]);
+
+        if ($request->hasFile('media')) {
+            $validated['media_path'] = $request->file('media')->store('tickets', 'public');
+        }
 
         $validated['user_id'] = Auth::id();
         $validated['status'] = 'Open';

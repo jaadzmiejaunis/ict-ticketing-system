@@ -15,13 +15,21 @@ class TicketCommentController extends Controller
 {
     public function store(Request $request, Ticket $ticket)
     {
-        $request->validate(['comment' => 'required', 'parent_id' => 'nullable|exists:ticket_comments,id']);
+        $request->validate([
+            'comment' => 'required',
+            'parent_id' => 'nullable|exists:ticket_comments,id',
+            'media' => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi|max:10240'
+        ]);
 
-        $comment = TicketComment::create([
-            'ticket_id' => $ticket->id,
-            'user_id'   => Auth::id(),
+        $mediaPath = $request->hasFile('media')
+            ? $request->file('media')->store('comments', 'public')
+            : null;
+
+        $comment = $ticket->comments()->create([
+            'user_id' => Auth::id(),
+            'comment' => $request->comment,
             'parent_id' => $request->parent_id,
-            'comment'   => $request->comment,
+            'media_path' => $mediaPath,
         ]);
 
         // 1. Find Mentioned Users (@Name)

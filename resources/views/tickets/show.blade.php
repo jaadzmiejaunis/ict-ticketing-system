@@ -43,6 +43,24 @@
                     </div>
                 </div>
 
+                @if($ticket->media_path)
+                    <div class="mt-4">
+                        <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Attached Media</h3>
+                        @if(Str::endsWith($ticket->media_path, ['.mp4', '.mov', '.avi']))
+                            <video controls class="max-w-full rounded-lg border dark:border-gray-700"><source src="{{ asset('storage/' . $ticket->media_path) }}"></video>
+                        @else
+                            <img src="{{ asset('storage/' . $ticket->media_path) }}" class="max-w-md rounded-lg shadow-sm border dark:border-gray-700">
+                        @endif
+                    </div>
+                    @endif
+
+                    <form action="{{ route('comments.store', $ticket) }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <textarea name="comment" class="..." placeholder="Write a comment..."></textarea>
+                        <input type="file" name="media" class="mt-2 text-xs">
+                        <button type="submit" class="...">Post Comment</button>
+                    </form>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400 mb-6 transition-colors">
                     <div><span class="font-bold text-gray-500 dark:text-gray-500 uppercase text-[10px] tracking-wider">Category:</span> <span class="text-gray-800 dark:text-gray-300">{{ $ticket->category }}</span></div>
                     <div><span class="font-bold text-gray-500 dark:text-gray-500 uppercase text-[10px] tracking-wider">Last Updated:</span> <span class="text-gray-800 dark:text-gray-300">{{ $ticket->updated_at->diffForHumans() }}</span></div>
