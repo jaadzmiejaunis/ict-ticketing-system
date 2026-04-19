@@ -1,6 +1,6 @@
 @use('Illuminate\Support\Str')
 <x-app-layout>
-    <div class="py-6">
+    <div class="py-6" x-data="{ lightboxOpen: false, lightboxSrc: '', scale: 1 }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             <div class="flex justify-between items-center mb-6">
@@ -44,22 +44,30 @@
                 </div>
 
                 @if($ticket->media_path)
-                    <div class="mt-4">
+                    <div class="mt-4 mb-8">
                         <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Attached Media</h3>
+
                         @if(Str::endsWith($ticket->media_path, ['.mp4', '.mov', '.avi']))
-                            <video controls class="max-w-full rounded-lg border dark:border-gray-700"><source src="{{ asset('storage/' . $ticket->media_path) }}"></video>
+                            <div class="max-w-2xl">
+                                <video controls class="w-full rounded-lg border dark:border-gray-700 shadow-sm bg-black">
+                                    <source src="{{ asset('storage/' . $ticket->media_path) }}">
+                                </video>
+                            </div>
                         @else
-                            <img src="{{ asset('storage/' . $ticket->media_path) }}" class="max-w-md rounded-lg shadow-sm border dark:border-gray-700">
+                            <div class="relative group max-w-sm">
+                                <img src="{{ asset('storage/' . $ticket->media_path) }}"
+                                     @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $ticket->media_path) }}'; scale = 1"
+                                     class="w-full h-64 object-cover rounded-lg shadow-md border dark:border-gray-700 cursor-zoom-in hover:scale-[1.02] hover:opacity-95 transition duration-300">
+
+                                <div class="absolute bottom-3 right-3 bg-black/60 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                                    </svg>
+                                </div>
+                            </div>
                         @endif
                     </div>
-                    @endif
-
-                    <form action="{{ route('comments.store', $ticket) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        <textarea name="comment" class="..." placeholder="Write a comment..."></textarea>
-                        <input type="file" name="media" class="mt-2 text-xs">
-                        <button type="submit" class="...">Post Comment</button>
-                    </form>
+                @endif
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400 mb-6 transition-colors">
                     <div><span class="font-bold text-gray-500 dark:text-gray-500 uppercase text-[10px] tracking-wider">Category:</span> <span class="text-gray-800 dark:text-gray-300">{{ $ticket->category }}</span></div>
@@ -172,7 +180,6 @@
                     <div class="p-6 space-y-10 max-h-[700px] overflow-y-auto bg-white dark:bg-[#111827] custom-scrollbar transition-colors">
                         @forelse($ticket->comments as $comment)
                             @php $isMyComment = $comment->user_id == Auth::id(); @endphp
-
                             <div class="relative group">
                                 <div class="flex gap-4">
                                     <div class="flex-shrink-0 z-10">
@@ -182,7 +189,6 @@
                                             <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold uppercase">{{ substr($comment->user->name, 0, 2) }}</div>
                                         @endif
                                     </div>
-
                                     <div class="flex-1 relative">
                                         <div class="flex justify-between items-center mb-1">
                                             <span class="text-xs font-bold text-gray-900 dark:text-gray-200 transition-colors">{{ $comment->user->name }}</span>
@@ -192,15 +198,23 @@
                                             </div>
                                         </div>
 
-                                        @if(Str::contains($comment->comment, Auth::user()->name) && !$isMyComment)
-                                            <span class="absolute -top-1 -right-1 flex h-2 w-2 z-10">
-                                                <span class="animate-ping absolute h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                                <span class="relative rounded-full h-2 w-2 bg-red-500"></span>
-                                            </span>
-                                        @endif
+                                        <div class="p-4 text-sm rounded-lg border shadow-sm leading-relaxed transition-colors {{ $isMyComment ? 'bg-indigo-50 dark:bg-indigo-900/40 border-indigo-200 dark:border-indigo-500/30 text-gray-800 dark:text-gray-200' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-300' }}">
 
-                                        <div class="p-3 text-sm rounded-lg border shadow-sm leading-relaxed transition-colors {{ $isMyComment ? 'bg-indigo-50 dark:bg-indigo-900/40 border-indigo-200 dark:border-indigo-500/30 text-gray-800 dark:text-gray-300' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-300' }}">
-                                            {{ $comment->comment }}
+                                            @if($comment->media_path)
+                                                <div class="mb-3 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black max-w-md shadow-sm">
+                                                    @if(Str::endsWith($comment->media_path, ['.mp4', '.mov', '.avi']))
+                                                        <video controls class="w-full max-h-80 object-contain">
+                                                            <source src="{{ asset('storage/' . $comment->media_path) }}">
+                                                        </video>
+                                                    @else
+                                                        <img src="{{ asset('storage/' . $comment->media_path) }}"
+                                                             @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $comment->media_path) }}'; scale = 1"
+                                                             class="w-full max-h-80 object-cover cursor-zoom-in hover:opacity-90 transition">
+                                                    @endif
+                                                </div>
+                                            @endif
+
+                                            <p>{{ $comment->comment }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -230,8 +244,24 @@
                                                             </button>
                                                         </div>
                                                     </div>
-                                                    <div class="p-3 text-xs rounded-xl border shadow-md transition-colors {{ $isMyReply ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30 text-gray-800 dark:text-gray-300' : 'bg-gray-100/60 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400' }}">
-                                                        {{ $reply->comment }}
+
+                                                    <div class="p-3 text-xs rounded-xl border shadow-md transition-colors {{ $isMyReply ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30 text-gray-800 dark:text-gray-200' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300' }}">
+
+                                                        @if($reply->media_path)
+                                                            <div class="mb-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black max-w-sm shadow-sm">
+                                                                @if(Str::endsWith($reply->media_path, ['.mp4', '.mov', '.avi']))
+                                                                    <video controls class="w-full max-h-60 object-contain">
+                                                                        <source src="{{ asset('storage/' . $reply->media_path) }}">
+                                                                    </video>
+                                                                @else
+                                                                    <img src="{{ asset('storage/' . $reply->media_path) }}"
+                                                                         @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $reply->media_path) }}'; scale = 1"
+                                                                         class="w-full max-h-60 object-cover cursor-zoom-in hover:opacity-90 transition">
+                                                                @endif
+                                                            </div>
+                                                        @endif
+
+                                                        <p>{{ $reply->comment }}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -245,13 +275,22 @@
                     </div>
 
                     <div class="p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-colors">
-                        <form action="{{ route('tickets.comments.store', $ticket->id) }}" method="POST">
+                        <form action="{{ route('tickets.comments.store', $ticket->id) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="parent_id" x-model="parentId">
 
                             <textarea x-ref="commentBox" x-model="replyName" name="comment" rows="3" required
                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 transition-colors"
                                       placeholder="Write an update..."></textarea>
+
+                            <input type="file" name="media" accept="image/*,video/*"
+                                   class="mt-3 block w-full text-xs text-gray-500 dark:text-gray-400
+                                          file:mr-4 file:py-2 file:px-4
+                                          file:rounded-full file:border-0
+                                          file:text-xs file:font-bold
+                                          file:bg-indigo-50 file:text-indigo-700
+                                          hover:file:bg-indigo-100
+                                          dark:file:bg-indigo-900/30 dark:file:text-indigo-400 transition">
 
                             <div class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <div class="flex items-center gap-4">
@@ -289,12 +328,50 @@
                 </div>
             </div>
         </div>
-    </div>
+
+        <template x-teleport="body">
+            <div x-show="lightboxOpen"
+                 @keydown.escape.window="lightboxOpen = false"
+                 class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-sm"
+                 style="display: none;"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100">
+
+                <div class="fixed top-0 left-0 right-0 p-6 flex justify-between items-center z-[110]">
+                    <div></div>
+
+                    <button @click="lightboxOpen = false" class="text-white bg-white/10 hover:bg-red-600 transition-all duration-300 p-2 rounded-full border border-white/20 shadow-2xl hover:scale-110 active:scale-95 group">
+                        <svg class="w-10 h-10 text-white group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-3 bg-gray-900/80 border border-white/20 p-2 rounded-2xl shadow-2xl backdrop-blur-md">
+                    <button @click="scale = Math.max(scale - 0.25, 0.5)" class="p-3 text-white hover:bg-white/10 rounded-xl transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"></path></svg>
+                    </button>
+                    <div class="flex flex-col items-center px-2">
+                        <span class="text-white text-[10px] font-black uppercase tracking-tighter" x-text="(scale * 100).toFixed(0) + '%'"></span>
+                        <button @click="scale = 1" class="text-[9px] font-bold text-indigo-400 hover:text-white uppercase tracking-widest transition">Reset</button>
+                    </div>
+                    <button @click="scale = Math.min(scale + 0.25, 4)" class="p-3 text-white hover:bg-white/10 rounded-xl transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                    </button>
+                </div>
+
+                <div class="w-full h-full overflow-auto flex items-center justify-center p-4 md:p-12 cursor-grab active:cursor-grabbing" @click.self="lightboxOpen = false">
+                    <img :src="lightboxSrc"
+                         class="transition-transform duration-200 ease-out shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-sm select-none"
+                         :style="'transform: scale(' + scale + '); min-width: 45vw; max-height: 85vh; object-fit: contain;'">
+                </div>
+            </div>
+        </template>
+        </div>
 
     <script>
         $(document).ready(function() {
-            const isDark = document.documentElement.classList.contains('dark');
-
             $('#staff-search').select2({
                 placeholder: "Search for a staff member...",
                 allowClear: true,
