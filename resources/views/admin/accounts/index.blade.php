@@ -1,4 +1,6 @@
 <x-app-layout>
+    @section('title', 'User Account Management')
+
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
@@ -64,7 +66,7 @@
                         <select name="role" onchange="this.form.submit()" class="w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
                             <option value="">All Roles</option>
                             <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admins</option>
-                            <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Staff</option>
+                            <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Technicians</option>
                         </select>
                     </div>
 
@@ -105,14 +107,20 @@
                                 @forelse($activeUsers as $user)
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                         <td class="px-6 py-4">
-                                            <a href="{{ route('admin.accounts.performance', $user) }}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline text-sm transition-colors">
-                                                {{ $user->name }}
-                                            </a>
-                                            <div class="text-[11px] text-gray-500 dark:text-gray-500 font-bold uppercase transition-colors">{{ $user->email }}</div>
+                                            <div class="flex items-center gap-3">
+                                                <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=4f46e5&color=fff' }}"
+                                                     class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm" alt="Avatar">
+                                                <div>
+                                                    <a href="{{ route('admin.accounts.performance', $user) }}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline text-sm transition-colors">
+                                                        {{ $user->name }}
+                                                    </a>
+                                                    <div class="text-[11px] text-gray-500 dark:text-gray-500 font-bold uppercase transition-colors">{{ $user->email }}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4">
                                             <span class="px-3 py-1 text-[10px] font-bold rounded-full uppercase border transition-colors {{ $user->role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-700/50' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700/50' }}">
-                                                {{ $user->role }}
+                                                {{ $user->role === 'admin' ? 'Admin' : 'Technician' }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 text-right flex justify-end gap-3 items-center">
@@ -151,12 +159,18 @@
                                 @forelse($inactiveUsers as $user)
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-gray-50/50 dark:bg-gray-900/30">
                                         <td class="px-6 py-4">
-                                            <a href="{{ route('admin.accounts.performance', $user) }}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline text-sm transition-colors">{{ $user->name }}</a>
-                                            <div class="text-[11px] text-gray-500 dark:text-gray-500 font-bold uppercase transition-colors">{{ $user->email }}</div>
+                                            <div class="flex items-center gap-3">
+                                                <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=4f46e5&color=fff' }}"
+                                                     class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm opacity-60" alt="Avatar">
+                                                <div>
+                                                    <a href="{{ route('admin.accounts.performance', $user) }}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline text-sm transition-colors">{{ $user->name }}</a>
+                                                    <div class="text-[11px] text-gray-500 dark:text-gray-500 font-bold uppercase transition-colors">{{ $user->email }}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4">
                                             <span class="px-3 py-1 text-[10px] font-bold rounded-full uppercase border transition-colors {{ $user->role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-700/50' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700/50' }}">
-                                                {{ $user->role }}
+                                                {{ $user->role === 'admin' ? 'Admin' : 'Technician' }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 text-right flex justify-end gap-3 items-center">
@@ -244,7 +258,6 @@
         }
 
         function openHistoryModal(userId, userName) {
-            const isDark = document.documentElement.classList.contains('dark');
             document.getElementById('userNamePlaceholder').innerText = userName;
             const content = document.getElementById('historyContent');
             content.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-500 italic">Loading...</td></tr>';
@@ -258,7 +271,6 @@
                         html = '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-500 italic">No logs found.</td></tr>';
                     } else {
                         data.forEach(log => {
-                            // Unified status logic for Light and Dark modes
                             const statusClass = log.new_status
                                 ? 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 border-green-200 dark:border-green-700/50'
                                 : 'text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/40 border-red-200 dark:border-red-700/50';
@@ -289,7 +301,6 @@
 
             const reasonInput = document.getElementById('reason_text');
             reasonInput.classList.remove('border-red-500');
-            // Dynamically set correct base border color
             const isDark = document.documentElement.classList.contains('dark');
             reasonInput.classList.add(isDark ? 'border-gray-600' : 'border-gray-300');
 
