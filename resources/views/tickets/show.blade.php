@@ -180,6 +180,7 @@
                     <div class="p-6 space-y-10 max-h-[700px] overflow-y-auto bg-white dark:bg-[#111827] custom-scrollbar transition-colors">
                         @forelse($ticket->comments as $comment)
                             @php $isMyComment = $comment->user_id == Auth::id(); @endphp
+
                             <div class="relative group">
                                 <div class="flex gap-4">
                                     <div class="flex-shrink-0 z-10">
@@ -189,6 +190,7 @@
                                             <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold uppercase">{{ substr($comment->user->name, 0, 2) }}</div>
                                         @endif
                                     </div>
+
                                     <div class="flex-1 relative">
                                         <div class="flex justify-between items-center mb-1">
                                             <span class="text-xs font-bold text-gray-900 dark:text-gray-200 transition-colors">{{ $comment->user->name }}</span>
@@ -197,6 +199,13 @@
                                                 <button @click="$dispatch('set-reply', {id: {{ $comment->id }}, name: '{{ $comment->user->name }}'})" class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase hover:underline transition-colors">Reply</button>
                                             </div>
                                         </div>
+
+                                        @if(Str::contains($comment->comment, Auth::user()->name) && !$isMyComment)
+                                            <span class="absolute -top-1 -right-1 flex h-2 w-2 z-10">
+                                                <span class="animate-ping absolute h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                <span class="relative rounded-full h-2 w-2 bg-red-500"></span>
+                                            </span>
+                                        @endif
 
                                         <div class="p-4 text-sm rounded-lg border shadow-sm leading-relaxed transition-colors {{ $isMyComment ? 'bg-indigo-50 dark:bg-indigo-900/40 border-indigo-200 dark:border-indigo-500/30 text-gray-800 dark:text-gray-200' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-300' }}">
 
@@ -208,7 +217,7 @@
                                                         </video>
                                                     @else
                                                         <img src="{{ asset('storage/' . $comment->media_path) }}"
-                                                             @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $comment->media_path) }}'; scale = 1"
+                                                             @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $comment->media_path) }}'; resetZoom();"
                                                              class="w-full max-h-80 object-cover cursor-zoom-in hover:opacity-90 transition">
                                                     @endif
                                                 </div>
@@ -245,7 +254,7 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="p-3 text-xs rounded-xl border shadow-md transition-colors {{ $isMyReply ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30 text-gray-800 dark:text-gray-200' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300' }}">
+                                                    <div class="p-3 text-xs rounded-xl border shadow-md transition-colors {{ $isMyReply ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30 text-gray-800 dark:text-gray-200' : 'bg-gray-100/60 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300' }}">
 
                                                         @if($reply->media_path)
                                                             <div class="mb-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black max-w-sm shadow-sm">
@@ -255,7 +264,7 @@
                                                                     </video>
                                                                 @else
                                                                     <img src="{{ asset('storage/' . $reply->media_path) }}"
-                                                                         @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $reply->media_path) }}'; scale = 1"
+                                                                         @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $reply->media_path) }}'; resetZoom();"
                                                                          class="w-full max-h-60 object-cover cursor-zoom-in hover:opacity-90 transition">
                                                                 @endif
                                                             </div>
@@ -283,7 +292,7 @@
                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 transition-colors"
                                       placeholder="Write an update..."></textarea>
 
-                            <input type="file" name="media" accept="image/*,video/*"
+                            <input type="file" id="comment-media-upload" name="media" accept=".jpg,.jpeg,.png,.mp4"
                                    class="mt-3 block w-full text-xs text-gray-500 dark:text-gray-400
                                           file:mr-4 file:py-2 file:px-4
                                           file:rounded-full file:border-0
@@ -291,6 +300,9 @@
                                           file:bg-indigo-50 file:text-indigo-700
                                           hover:file:bg-indigo-100
                                           dark:file:bg-indigo-900/30 dark:file:text-indigo-400 transition">
+
+                            <p id="comment-media-error" class="text-red-500 text-xs font-bold mt-2 uppercase tracking-wide hidden"></p>
+                            <p class="text-gray-500 text-xs mt-1 italic">Allowed formats: JPEG, PNG, MP4. Max size: 20MB</p>
 
                             <div class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <div class="flex items-center gap-4">
@@ -306,7 +318,7 @@
                                         Cancel Reply
                                     </button>
                                 </div>
-                                <button type="submit" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition active:scale-95 shadow-lg border border-transparent">
+                                <button type="submit" id="comment-submit-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition active:scale-95 shadow-lg border border-transparent">
                                     Post Comment
                                 </button>
                             </div>
@@ -332,46 +344,54 @@
         <template x-teleport="body">
             <div x-show="lightboxOpen"
                  @keydown.escape.window="lightboxOpen = false"
-                 class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-sm"
+                 class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md"
                  style="display: none;"
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0"
                  x-transition:enter-end="opacity-100">
 
-                <div class="fixed top-0 left-0 right-0 p-6 flex justify-between items-center z-[110]">
-                    <div></div>
-
-                    <button @click="lightboxOpen = false" class="text-white bg-white/10 hover:bg-red-600 transition-all duration-300 p-2 rounded-full border border-white/20 shadow-2xl hover:scale-110 active:scale-95 group">
-                        <svg class="w-10 h-10 text-white group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="fixed top-0 left-0 right-0 p-4 md:p-8 flex justify-end items-center z-[110] pointer-events-none">
+                    <button @click="lightboxOpen = false" class="pointer-events-auto text-white bg-white/10 hover:bg-red-600 transition-all duration-300 p-3 rounded-full border border-white/30 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:scale-110 active:scale-95 group">
+                        <svg class="w-8 h-8 md:w-10 md:h-10 text-white shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
 
-                <div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-3 bg-gray-900/80 border border-white/20 p-2 rounded-2xl shadow-2xl backdrop-blur-md">
-                    <button @click="scale = Math.max(scale - 0.25, 0.5)" class="p-3 text-white hover:bg-white/10 rounded-xl transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"></path></svg>
+                <div class="fixed bottom-6 md:bottom-12 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-3 md:gap-5 bg-gray-900/90 border border-white/20 p-3 md:p-4 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+                    <button @click="scale = Math.max(scale - 0.25, 0.5)" class="p-3 md:p-4 bg-white/5 text-white hover:bg-white/20 hover:text-indigo-400 rounded-xl md:rounded-2xl transition cursor-pointer border border-transparent hover:border-white/10" title="Zoom Out">
+                        <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
                     </button>
-                    <div class="flex flex-col items-center px-2">
-                        <span class="text-white text-[10px] font-black uppercase tracking-tighter" x-text="(scale * 100).toFixed(0) + '%'"></span>
-                        <button @click="scale = 1" class="text-[9px] font-bold text-indigo-400 hover:text-white uppercase tracking-widest transition">Reset</button>
+
+                    <div class="flex flex-col items-center px-4 md:px-8 w-24 md:w-32">
+                        <span class="text-white text-xs md:text-sm font-black uppercase tracking-widest drop-shadow-md" x-text="(scale * 100).toFixed(0) + '%'"></span>
+                        <button @click="resetZoom()" class="text-[10px] md:text-xs font-black text-indigo-400 hover:text-white uppercase tracking-widest transition mt-1 py-1 px-3 bg-white/5 rounded-full hover:bg-white/10">Reset</button>
                     </div>
-                    <button @click="scale = Math.min(scale + 0.25, 4)" class="p-3 text-white hover:bg-white/10 rounded-xl transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+
+                    <button @click="scale = Math.min(scale + 0.25, 4)" class="p-3 md:p-4 bg-white/5 text-white hover:bg-white/20 hover:text-indigo-400 rounded-xl md:rounded-2xl transition cursor-pointer border border-transparent hover:border-white/10" title="Zoom In">
+                        <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
                     </button>
                 </div>
 
-                <div class="w-full h-full overflow-auto flex items-center justify-center p-4 md:p-12 cursor-grab active:cursor-grabbing" @click.self="lightboxOpen = false">
+                <div class="w-full h-full overflow-hidden flex items-center justify-center p-0" @click.self="lightboxOpen = false">
                     <img :src="lightboxSrc"
-                         class="transition-transform duration-200 ease-out shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-sm select-none"
-                         :style="'transform: scale(' + scale + '); min-width: 45vw; max-height: 85vh; object-fit: contain;'">
+                         @mousedown.prevent="startDrag($event)"
+                         @mousemove.window="doDrag($event)"
+                         @mouseup.window="stopDrag()"
+                         @touchstart.prevent="startDrag($event)"
+                         @touchmove.window="doDrag($event)"
+                         @touchend.window="stopDrag()"
+                         class="shadow-[0_0_50px_rgba(0,0,0,0.9)] rounded-lg select-none bg-white/5"
+                         :class="isDragging ? 'cursor-grabbing' : 'transition-transform duration-200 ease-out cursor-grab'"
+                         :style="'transform: translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + '); min-width: 50vw; max-height: 85vh; object-fit: contain;'">
                 </div>
             </div>
         </template>
         </div>
 
     <script>
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select2 init
             $('#staff-search').select2({
                 placeholder: "Search for a staff member...",
                 allowClear: true,
@@ -379,6 +399,50 @@
                 selectionCssClass: '!bg-gray-50 dark:!bg-gray-700 !border-gray-300 dark:!border-gray-600 !h-11 !flex !items-center !text-gray-900 dark:!text-white !px-4 !rounded-lg !shadow-sm !font-bold',
                 dropdownCssClass: 'dark-dropdown !bg-white dark:!bg-gray-700 !border-gray-300 dark:!border-gray-600 !text-gray-900 dark:!text-white !shadow-2xl'
             });
+
+            // Comment File Validation Logic
+            const mediaUpload = document.getElementById('comment-media-upload');
+            const mediaError = document.getElementById('comment-media-error');
+            const submitBtn = document.getElementById('comment-submit-btn');
+
+            if (mediaUpload) {
+                mediaUpload.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+
+                    if (file) {
+                        // Check File Type
+                        const validTypes = ['image/jpeg', 'image/png', 'video/mp4'];
+                        if (!validTypes.includes(file.type)) {
+                            mediaError.textContent = '❌ ERROR: Invalid format! Please upload only JPEG, PNG, or MP4 files.';
+                            mediaError.classList.remove('hidden');
+                            mediaUpload.value = '';
+                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        // Check File Size (20MB)
+                        if (file.size > 20971520) {
+                            mediaError.textContent = '❌ ERROR: File is too large! Maximum allowed size is 20MB.';
+                            mediaError.classList.remove('hidden');
+                            mediaUpload.value = '';
+                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        // Valid file
+                        mediaError.classList.add('hidden');
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitBtn.disabled = false;
+                    } else {
+                        // Cancelled selection
+                        mediaError.classList.add('hidden');
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
         });
     </script>
 </x-app-layout>

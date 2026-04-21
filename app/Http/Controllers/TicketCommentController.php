@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\CommentNotification;
-use Illuminate\Support\Str; // Fixes red Str highlight
+use Illuminate\Support\Str;
 
 class TicketCommentController extends Controller
 {
@@ -18,7 +18,8 @@ class TicketCommentController extends Controller
         $request->validate([
             'comment' => 'required',
             'parent_id' => 'nullable|exists:ticket_comments,id',
-            'media' => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi|max:10240'
+            // INCREASED MAX SIZE TO 20MB (20480 KB)
+            'media' => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi|max:20480'
         ]);
 
         $mediaPath = $request->hasFile('media')
@@ -62,12 +63,12 @@ class TicketCommentController extends Controller
             $user->notify(new CommentNotification($ticket, $comment, 'mention'));
         }
 
-        // Send Reply Alert (Priority 2 - Only if they weren't already @pinged)
+        // Send Reply Alert (Priority 2)
         if ($replyTarget && !$mentionedUsers->contains('id', $replyTarget->id)) {
             $replyTarget->notify(new CommentNotification($ticket, $comment, 'reply'));
         }
 
-        // Send General Activity Alert to others
+        // Send General Activity Alert
         $others = $stakeholders->diff($mentionedUsers);
         if ($replyTarget) { $others = $others->where('id', '!=', $replyTarget->id); }
 

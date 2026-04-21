@@ -8,6 +8,7 @@ use App\Notifications\TicketUpdateNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
 class TicketController extends Controller
@@ -113,10 +114,36 @@ class TicketController extends Controller
 
     public function update(Request $request, Ticket $ticket)
     {
-        $oldStatus = $ticket->status;
-        $ticket->update($request->all());
+        // 1. Validate the incoming request, including the 20MB media limit
+        $validated = $request->validate([
+            'reporter_name' => 'required|string|max:255',
+            'category'      => 'required|string',
+            'title'         => 'required|string|max:255',
+            'description'   => 'required|string',
+            'due_date'      => 'nullable|date',
+            'priority'      => 'required|string|in:Low,Medium,High',
+            'status'        => 'nullable|string',
+            'media'         => 'nullable|file|mimes:jpg,jpeg,png,mp4|max:20480',
+        ]);
 
-        if ($oldStatus !== $ticket->status && $ticket->user) {
+        $oldStatus = $ticket->status;
+
+        // 2. Handle the file upload replacement
+        if ($request->hasFile('media')) {
+            // If the ticket already had a file, delete it from storage first
+            if ($ticket->media_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($ticket->media_path);
+            }
+
+            // Store the new file and add the path to our validated data array
+            $validated['media_path'] = $request->file('media')->store('tickets', 'public');
+        }
+
+        // 3. Safely update the ticket with only the validated data
+        $ticket->update($validated);
+
+        // 4. Send Notifications if status changed
+        if (isset($validated['status']) && $oldStatus !== $ticket->status && $ticket->user) {
             $ticket->user->notify(new TicketUpdateNotification($ticket, 'status_change', Auth::user()->name));
         }
 

@@ -18,7 +18,7 @@
                     </span>
                 </div>
 
-                <form method="POST" action="{{ route('tickets.update', $ticket) }}">
+                <form method="POST" action="{{ route('tickets.update', $ticket) }}" enctype="multipart/form-data">
                     @csrf
                     @method('PATCH')
 
@@ -64,8 +64,32 @@
                         </div>
                     </div>
 
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-400 uppercase mb-1 transition-colors">Update Attachment (Photo/Video)</label>
+
+                        @if($ticket->media_path)
+                            <div class="mb-3 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-md inline-block">
+                                <p class="text-xs text-indigo-700 dark:text-indigo-400 font-bold flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                    Currently attached: <a href="{{ asset('storage/' . $ticket->media_path) }}" target="_blank" class="underline hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors">View Current File</a>
+                                </p>
+                            </div>
+                        @endif
+
+                        <input type="file" id="media-upload" name="media" accept=".jpg,.jpeg,.png,.mp4" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-gray-700 dark:file:text-gray-300 transition-colors">
+
+                        <p id="media-error" class="text-red-500 text-xs font-bold mt-2 uppercase tracking-wide hidden"></p>
+
+                        @error('media')
+                            <p class="text-red-500 text-xs font-bold mt-2 uppercase tracking-wide">
+                                {{ $message }}
+                            </p>
+                        @enderror
+                        <p class="text-gray-500 text-xs mt-1 italic">Allowed formats: JPEG, PNG, MP4. Max size: 20MB. Uploading a new file will replace the current one.</p>
+                    </div>
+
                     <div class="flex items-center gap-5 border-t border-gray-200 dark:border-gray-700 pt-6 transition-colors">
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-md font-bold transition shadow-md text-sm uppercase tracking-wider active:scale-95 border border-transparent">
+                        <button type="submit" id="submit-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-md font-bold transition shadow-md text-sm uppercase tracking-wider active:scale-95 border border-transparent">
                             Update Ticket
                         </button>
                         <a href="{{ route('tickets.index') }}" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition font-bold text-sm uppercase tracking-wider">
@@ -77,4 +101,51 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mediaUpload = document.getElementById('media-upload');
+            const mediaError = document.getElementById('media-error');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (mediaUpload) {
+                mediaUpload.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+
+                    if (file) {
+                        // 1. Check File Type explicitly
+                        const validTypes = ['image/jpeg', 'image/png', 'video/mp4'];
+                        if (!validTypes.includes(file.type)) {
+                            mediaError.textContent = '❌ ERROR: Invalid format! Please upload only JPEG, PNG, or MP4 files.';
+                            mediaError.classList.remove('hidden');
+                            mediaUpload.value = ''; // Erase the invalid file
+                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        // 2. Check File Size (20MB = 20 * 1024 * 1024 bytes)
+                        if (file.size > 20971520) {
+                            mediaError.textContent = '❌ ERROR: File is too large! Maximum allowed size is 20MB.';
+                            mediaError.classList.remove('hidden');
+                            mediaUpload.value = ''; // Erase the massive file
+                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        // File is perfect -> Hide error and enable button
+                        mediaError.classList.add('hidden');
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitBtn.disabled = false;
+                    } else {
+                        // User clicked 'Cancel' in the file picker
+                        mediaError.classList.add('hidden');
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
+        });
+    </script>
 </x-app-layout>

@@ -64,18 +64,21 @@
 
                     <div class="mb-6">
                         <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">Attachment (Photo/Video)</label>
-                        <input type="file" name="media" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-gray-700 dark:file:text-gray-300">
+
+                        <input type="file" id="media-upload" name="media" accept=".jpg,.jpeg,.png,.mp4" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-gray-700 dark:file:text-gray-300">
+
+                        <p id="media-error" class="text-red-500 text-xs font-bold mt-2 uppercase tracking-wide hidden"></p>
 
                         @error('media')
                             <p class="text-red-500 text-xs font-bold mt-2 uppercase tracking-wide">
                                 {{ $message }}
                             </p>
                         @enderror
-                        <p class="text-gray-500 text-xs mt-1 italic">Maximum file size: 20MB</p>
+                        <p class="text-gray-500 text-xs mt-1 italic">Allowed formats: JPEG, PNG, MP4. Max size: 20MB</p>
                     </div>
 
                     <div class="flex items-center gap-5 border-t border-gray-200 dark:border-gray-700 pt-6 transition-colors">
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-md font-bold transition shadow-sm text-sm uppercase tracking-wider active:scale-95 border border-transparent">
+                        <button type="submit" id="submit-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-md font-bold transition shadow-sm text-sm uppercase tracking-wider active:scale-95 border border-transparent">
                             Submit Ticket
                         </button>
                         <a href="{{ route('tickets.index') }}" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition font-bold text-sm uppercase tracking-wider">
@@ -87,4 +90,51 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mediaUpload = document.getElementById('media-upload');
+            const mediaError = document.getElementById('media-error');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (mediaUpload) {
+                mediaUpload.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+
+                    if (file) {
+                        // 1. Check File Type explicitly
+                        const validTypes = ['image/jpeg', 'image/png', 'video/mp4'];
+                        if (!validTypes.includes(file.type)) {
+                            mediaError.textContent = '❌ ERROR: Invalid format! Please upload only JPEG, PNG, or MP4 files.';
+                            mediaError.classList.remove('hidden');
+                            mediaUpload.value = ''; // Erase the invalid file
+                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        // 2. Check File Size (20MB = 20 * 1024 * 1024 bytes)
+                        if (file.size > 20971520) {
+                            mediaError.textContent = '❌ ERROR: File is too large! Maximum allowed size is 20MB.';
+                            mediaError.classList.remove('hidden');
+                            mediaUpload.value = ''; // Erase the massive file
+                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            submitBtn.disabled = true;
+                            return;
+                        }
+
+                        // File is perfect -> Hide error and enable button
+                        mediaError.classList.add('hidden');
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitBtn.disabled = false;
+                    } else {
+                        // User clicked 'Cancel' in the file picker
+                        mediaError.classList.add('hidden');
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
+        });
+    </script>
 </x-app-layout>
