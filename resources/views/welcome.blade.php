@@ -3,11 +3,11 @@
 
         <div class="mb-12 transition-transform hover:scale-105 duration-300">
             <div class="p-5 bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-2xl transition-colors">
-                <svg class="w-16 h-16 text-indigo-600 dark:text-indigo-500" viewBox="0 0 62 65" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M61.8548 14.6253L31.3537 0.170654L0.852539 14.6253L31.3537 29.0799L61.8548 14.6253Z" fill="currentColor"/>
-                    <path d="M61.8548 32.25L31.3537 46.7046L0.852539 32.25V46.7046L31.3537 61.1593L61.8548 46.7046V32.25Z" fill="currentColor"/>
-                    <path d="M31.3537 29.0799V46.7046L61.8548 32.25V14.6253L31.3537 29.0799Z" fill="currentColor" fill-opacity="0.5"/>
-                </svg>
+                <div class="flex justify-center">
+                    <a href="/">
+                        <x-application-logo class="w-20 h-20" />
+                    </a>
+                </div>
             </div>
         </div>
 
