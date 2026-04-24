@@ -17,22 +17,32 @@ use Illuminate\Validation\Rules\Password;
 class ProfileController extends Controller
 {
     /**
-     * Display the user's personal performance profile.
-     * PRESERVED: Every line of your original Ticket and Chart logic.
+     * Display the user's personal performance profile with time filtering.
      */
-    public function myPerformance(): View
+    public function myPerformance(Request $request): View
     {
         $user = Auth::user();
 
-        // 1. Fetch tickets assigned to you
-        $tickets = Ticket::where('assigned_to', $user->id)->get();
+        // Default to 'all' if no filter is selected
+        $filter = $request->input('filter', 'all');
 
-        // 2. Calculate Metric Cards
+        // 1. Fetch tickets assigned to you with the selected time filter
+        $tickets = Ticket::where('assigned_to', $user->id)
+            ->when($filter === 'month', function ($query) {
+                return $query->whereMonth('created_at', now()->month)
+                             ->whereYear('created_at', now()->year);
+            })
+            ->when($filter === 'year', function ($query) {
+                return $query->whereYear('created_at', now()->year);
+            })
+            ->get();
+
+        // 2. Calculate Metric Cards based on filtered tickets
         $totalAssigned = $tickets->count();
         $resolvedCount = $tickets->where('status', 'Resolved')->count();
         $pendingCount = $tickets->whereIn('status', ['Open', 'Assigned', 'On Hold'])->count();
 
-        // 3. Prepare Chart Data using exact DB Enum values
+        // 3. Prepare Chart Data using exact DB Enum values based on filtered tickets
         $chartData = [
             'status' => [
                 'Open' => $tickets->where('status', 'Open')->count(),
@@ -52,7 +62,7 @@ class ProfileController extends Controller
             ]
         ];
 
-        // 4. Get the 5 most recently resolved tasks for the table
+        // 4. Get the 5 most recently resolved tasks for the table (ignoring filter to always show recent history)
         $recentTasks = Ticket::where('assigned_to', $user->id)
             ->where('status', 'Resolved')
             ->latest('updated_at')
@@ -60,7 +70,7 @@ class ProfileController extends Controller
             ->get();
 
         return view('profile.my_performance', compact(
-            'user', 'totalAssigned', 'resolvedCount', 'pendingCount', 'recentTasks', 'chartData'
+            'user', 'totalAssigned', 'resolvedCount', 'pendingCount', 'recentTasks', 'chartData', 'filter'
         ));
     }
 

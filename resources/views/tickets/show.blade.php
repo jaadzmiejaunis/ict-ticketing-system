@@ -1,6 +1,40 @@
 @use('Illuminate\Support\Str')
 <x-app-layout>
-    <div class="py-6 sm:py-12" x-data="{ lightboxOpen: false, lightboxSrc: '', scale: 1 }">
+    <div class="py-6 sm:py-12" x-data="{
+        lightboxOpen: false,
+        lightboxSrc: '',
+        scale: 1,
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+        translateX: 0,
+        translateY: 0,
+        resetZoom() {
+            this.scale = 1;
+            this.translateX = 0;
+            this.translateY = 0;
+        },
+        startDrag(e) {
+            // Only allow dragging if zoomed in
+            if (this.scale <= 1) return;
+            this.isDragging = true;
+            // Support both mouse and touch events
+            let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            this.startX = clientX - this.translateX;
+            this.startY = clientY - this.translateY;
+        },
+        doDrag(e) {
+            if (!this.isDragging) return;
+            let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            this.translateX = clientX - this.startX;
+            this.translateY = clientY - this.startY;
+        },
+        stopDrag() {
+            this.isDragging = false;
+        }
+    }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
             <div class="flex justify-between items-center mb-4 sm:mb-6">
@@ -57,7 +91,7 @@
                         @else
                             <div class="relative group max-w-sm">
                                 <img src="{{ asset('storage/' . $ticket->media_path) }}"
-                                     @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $ticket->media_path) }}'; scale = 1"
+                                     @click="lightboxOpen = true; lightboxSrc = '{{ asset('storage/' . $ticket->media_path) }}'; resetZoom();"
                                      class="w-full h-48 sm:h-64 object-cover rounded-lg shadow-md border dark:border-gray-700 cursor-zoom-in hover:scale-[1.02] hover:opacity-95 transition duration-300">
 
                                 <div class="absolute bottom-3 right-3 bg-black/60 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">

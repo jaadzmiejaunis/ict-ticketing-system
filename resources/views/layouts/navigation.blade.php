@@ -82,14 +82,14 @@
                                             $icon = 'TI';
                                             $title = $data['title'] ?? 'Ticket Updated';
                                             $message = $data['message'] ?? (isset($data['ticket_id']) ? "#{$data['ticket_id']}: {$data['ticket_title']}" : '');
-                                            if ($type === 'welcome') { $icon = '🎉'; $url = route('profile.edit'); }
-                                            elseif ($type === 'admin_action') { $icon = '👤'; $url = Auth::user()->role === 'admin' ? route('admin.accounts') : '#'; }
+                                            if ($type === 'welcome') { $icon = '脂'; $url = route('profile.edit'); }
+                                            elseif ($type === 'admin_action') { $icon = '側'; $url = Auth::user()->role === 'admin' ? route('admin.accounts') : '#'; }
                                         @endphp
                                         <div x-show="{{ $visibilityCondition }}">
                                             <a href="{{ $isComment ? route('tickets.show', $data['ticket_id'] ?? '#') : $url }}"
                                                class="flex items-start gap-4 p-5 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition border-b border-gray-100 dark:border-gray-800/50 group relative {{ $isUnread ? 'bg-indigo-50/30 dark:bg-indigo-500/[0.03]' : 'opacity-60' }}">
                                                 @if($isUnread) <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 dark:bg-indigo-500 transition-colors shadow-[0_0_15px_rgba(99,102,241,0.4)]"></div> @endif
-                                                <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-black text-gray-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 border border-gray-200 dark:border-gray-700 transition uppercase shrink-0">{{ $isComment ? '💬' : $icon }}</div>
+                                                <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-black text-gray-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 border border-gray-200 dark:border-gray-700 transition uppercase shrink-0">{{ $isComment ? '町' : $icon }}</div>
                                                 <div class="flex-1 min-w-0">
                                                     <div class="flex justify-between items-center mb-1">
                                                         <span class="text-[10px] font-black {{ $isComment && $type === 'mention' ? 'text-red-500' : 'text-indigo-600' }} dark:{{ $isComment && $type === 'mention' ? 'text-red-400' : 'text-indigo-400' }} uppercase tracking-widest transition-colors">{{ $isComment ? ucfirst($type) : $title }}</span>
@@ -146,8 +146,20 @@
                     @endauth
                 </div>
 
-                <div class="flex items-center sm:hidden gap-2">
+                <div class="flex items-center sm:hidden gap-1">
                     <x-theme-toggle />
+
+                    @auth
+                        <a href="{{ route('notifications.index') }}" class="relative inline-flex items-center justify-center p-2.5 rounded-xl text-gray-400 hover:text-indigo-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/50 focus:outline-none transition-all duration-200 active:scale-90">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                            @php $unreadCountMobile = Auth::user()->unreadNotifications->count(); @endphp
+                            @if($unreadCountMobile > 0)
+                                <span class="absolute top-2 right-2 flex h-2.5 w-2.5 rounded-full bg-red-600 border-2 border-white dark:border-gray-800"></span>
+                            @endif
+                        </a>
+                    @endauth
 
                     <button @click="open = ! open"
                             class="inline-flex items-center justify-center p-2.5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/50 focus:outline-none transition-all duration-200 active:scale-90">

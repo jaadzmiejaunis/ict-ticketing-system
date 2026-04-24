@@ -53,39 +53,34 @@
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
 
-            // Check if the user is on a mobile device (screen width < 768px)
             var isMobile = window.innerWidth < 768;
 
             var calendar = new FullCalendar.Calendar(calendarEl, {
-                // If mobile, default to a scrollable list view. If desktop, use the month grid.
                 initialView: isMobile ? 'listWeek' : 'dayGridMonth',
-
-                // Limit events in grid view: 2 on mobile to save space, 5 on desktop
                 dayMaxEvents: isMobile ? 2 : 5,
 
                 headerToolbar: {
-                    // Adjusted toolbar structure for better mobile wrapping
                     left: 'prev,next today',
                     center: 'title',
                     right: 'dayGridMonth,listWeek'
                 },
 
-                // Dynamically adjust height on mobile so it doesn't stretch infinitely
-                height: isMobile ? 'auto' : '',
+                // 👇 --- THIS IS THE FIX --- 👇
+                // We remove the old height check and force the content height to 'auto'
+                // This stops it from stretching off the screen and shows everything fully!
+                contentHeight: 'auto',
+                // 👆 ----------------------- 👆
 
                 events: {!! json_encode($events) !!},
 
                 eventDisplay: 'block',
                 eventTimeFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short' },
 
-                // Re-render calendar sizing when user flips their phone or resizes window
                 windowResize: function(arg) {
                     var newIsMobile = window.innerWidth < 768;
                     if (newIsMobile !== isMobile) {
                         isMobile = newIsMobile;
                         calendar.setOption('dayMaxEvents', isMobile ? 2 : 5);
-                        // Optional: automatically switch views on resize
-                        // calendar.changeView(isMobile ? 'listWeek' : 'dayGridMonth');
                     }
                 },
 
