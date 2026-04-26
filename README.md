@@ -89,4 +89,4 @@ To access the system from other devices on the same Wi-Fi:
 ---
 > **Note:** Ensure your database is running in XAMPP (MySQL) before starting the application.
 
-Does this structure feel clearer for your users, or should we add a section specifically for the database migration steps?
+Now you are able to use the system.
