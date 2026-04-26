@@ -1,5 +1,6 @@
 @use('Illuminate\Support\Str')
 <x-app-layout>
+    @section('title', 'Ticket Info')
     <div class="py-6 sm:py-12" x-data="{
         lightboxOpen: false,
         lightboxSrc: '',

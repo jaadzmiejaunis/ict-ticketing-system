@@ -1,4 +1,5 @@
 <x-app-layout>
+    @section('title', 'Edit Ticket')
     <div class="py-6 sm:py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="relative bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-2xl sm:rounded-lg p-5 sm:p-8 border border-gray-200 dark:border-gray-700 transition-colors">

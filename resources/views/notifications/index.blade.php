@@ -1,4 +1,5 @@
 <x-app-layout>
+    @section('title', 'Notification')
     <div class="py-6 sm:py-12" x-data="{ tab: 'all' }">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 

@@ -1,4 +1,5 @@
 <x-app-layout>
+    @section('title', 'Ticket System')
     <div class="py-6 sm:py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class ="mb-4 sm:mb-6">
