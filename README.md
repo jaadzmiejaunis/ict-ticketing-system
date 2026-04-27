@@ -40,7 +40,7 @@ Before installing, ensure you have the following tools installed:
         ```
     * **Brevo (Email) API:**
         ```env
-        BREVO_API_KEY=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
+        BREVO_API_KEY=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
         MAIL_FROM_ADDRESS="youremailaddress@example.com"
         MAIL_FROM_NAME="GayaCare Support System"
         ```
