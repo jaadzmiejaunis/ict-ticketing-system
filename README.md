@@ -40,12 +40,23 @@ Before installing, ensure you have the following tools installed:
         ```
     * **Brevo (Email) API:**
         ```env
-        BREVO_API_KEY=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
+        BREVO_API_KEY="Your Brevo API key goes here"
         MAIL_FROM_ADDRESS="youremailaddress@example.com"
         MAIL_FROM_NAME="GayaCare Support System"
         ```
+    To get your Brevo API key, you need to create Brevo Account. Once your account has been created,
+    
+    Go to Setting/SMTP & API Keys and click API keys & MCP. Generate a New API Key.
 
-4.  **Create Admin Account**
+    <img width="1319" height="809" alt="image" src="https://github.com/user-attachments/assets/cbaa06b0-51ee-4573-ba05-347eb4426dd3" />
+    
+    Then, we need to set up your email sender.
+
+    Go to Setting/Senders, domain, IPs. Add sender. Use existing email.
+
+    <img width="1266" height="374" alt="image" src="https://github.com/user-attachments/assets/e81b4d76-7c8e-4c36-acbb-f8294e4c1dd6" />
+
+5.  **Create Admin Account**
     Since public registration is disabled, create your initial admin account via Tinker:
     ```bash
     php artisan tinker
