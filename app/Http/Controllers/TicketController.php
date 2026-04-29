@@ -62,6 +62,7 @@ class TicketController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Validate the incoming request
         $validated = $request->validate([
             'reporter_name' => 'required|string|max:255',
             'title'         => 'required|string|max:255',
@@ -72,6 +73,7 @@ class TicketController extends Controller
             'media'         => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi|max:20480', // 20MB limit
         ]);
 
+        // 2. Handle media file upload
         if ($request->hasFile('media')) {
             $validated['media_path'] = $request->file('media')->store('tickets', 'public');
         }
@@ -79,12 +81,21 @@ class TicketController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['status'] = 'Open';
 
-        // Use a transaction to ensure the ticket is saved before redirecting
+        // 3. Save the ticket using a transaction
         $ticket = DB::transaction(function () use ($validated) {
             return Ticket::create($validated);
         });
 
-        // Update the 'Recently Created' session widget
+        // 4. Notify ALL users about the new ticket
+        // This fetches every user (admins, staff, etc.) and sends the notification
+        $allUsers = User::all();
+        \Illuminate\Support\Facades\Notification::send($allUsers, new TicketUpdateNotification(
+            $ticket,
+            'created',
+            Auth::user()->name
+        ));
+
+        // 5. Update the 'Recently Created' session widget for the dashboard
         $recent = session()->get('recent_created', []);
         array_unshift($recent, [
             'id' => $ticket->id,

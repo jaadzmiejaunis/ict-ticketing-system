@@ -27,6 +27,7 @@ class TicketUpdateNotification extends Notification
         return [
             'ticket_id' => $this->ticket->id,
             'ticket_title' => $this->ticket->title,
+            'ticket_title' => $this->ticket->title,
             'actor_name' => $this->actorName,
             'type' => $this->type,
             'title' => $this->getNotificationTitle(),
@@ -37,6 +38,7 @@ class TicketUpdateNotification extends Notification
     protected function getNotificationTitle()
     {
         return match($this->type) {
+            'created'       => 'New Ticket Created',
             'status_change' => 'Status Updated',
             'assigned'      => 'Task Claimed',
             'resolved'      => 'Task Resolved',
@@ -48,6 +50,7 @@ class TicketUpdateNotification extends Notification
     protected function getMessage()
     {
         return match($this->type) {
+            'created'       => "{$this->actorName} added a new ticket: #{$this->ticket->id}",
             'status_change' => "{$this->actorName} updated the status of Ticket #{$this->ticket->id}",
             'assigned'      => "{$this->actorName} claimed and assigned Ticket #{$this->ticket->id} to themselves",
             'resolved'      => "{$this->actorName} has marked Ticket #{$this->ticket->id} as Resolved",
