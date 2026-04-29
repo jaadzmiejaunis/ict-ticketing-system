@@ -92,14 +92,15 @@ class ProfileController extends Controller
         // 1. Verify Google reCAPTCHA v2 (Single verification for the combined form)
         /** @var \Illuminate\Http\Client\Response $response */
         $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret'   => env('RECAPTCHA_SECRET_KEY'),
+            // Using config() is safer than env() in controllers
+            'secret'   => config('services.recaptcha.secret', env('RECAPTCHA_SECRET_KEY')),
             'response' => $request->input('g-recaptcha-response'),
         ]);
 
         $result = $response->json();
 
-        if (!$result['success']) {
-            return back()->withErrors(['g-recaptcha-response' => 'Security check failed. Please confirm you are not a robot.'])->withInput();
+        if (!($result['success'] ?? false)) {
+        return back()->withErrors(['g-recaptcha-response' => 'Security check failed. Please try again.'])->withInput();
         }
 
         $user = $request->user();

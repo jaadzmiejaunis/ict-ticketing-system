@@ -20,6 +20,7 @@ class ProfileUpdateRequest extends FormRequest
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($this->user()->id)],
             // Add 'image' and 'max:2048' (2MB in kilobytes)
             'avatar' => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png'],
+            'g-recaptcha-response' => ['required'],
         ];
     }
 
@@ -28,6 +29,7 @@ class ProfileUpdateRequest extends FormRequest
         return [
             'avatar.max' => 'The profile picture must not be larger than 2MB.',
             'avatar.image' => 'The file must be an image (JPG, PNG).',
+            'g-recaptcha-response.required' => 'Please confirm you are not a robot by clicking the reCAPTCHA.',
         ];
     }
 }
