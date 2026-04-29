@@ -1,59 +1,103 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# GayaCare Support System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+GayaCare Support is a centralized ICT support ticketing system designed for institutional hardware, software, and network management.
 
-## About Laravel
+## 🛠 Prerequisites
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Before installing, ensure you have the following tools installed:
+* **[Laravel Herd](https://herd.laravel.com/)** (Recommended for PHP/Web environment)
+* **[XAMPP](https://www.apachefriends.org/)** (For MySQL database management)
+* **[Node.js & npm](https://nodejs.org/)** (For frontend assets)
+* **[Git](https://git-scm.com/)**
+* **[VS Code](https://code.visualstudio.com/)** (Or your preferred IDE)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🚀 Installation & Setup
 
-## Learning Laravel
+1.  **Clone the Repository**
+    Open your terminal or VS Code and navigate to your Herd sites directory (usually `C:/Users/YOUR_USER/Herd`):
+    ```bash
+    git clone https://github.com/jaadzmiejaunis/ict-ticketing-system.git
+    ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+2.  **Install Dependencies**
+    Open the project folder in VS Code. In the terminal, run:
+    ```bash
+    composer run setup
+    ```
+    *This command will install PHP packages, create your `.env` file, and generate your application key.*
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+3.  **Environment Configuration**
+    Open the `.env` file in your root directory and update the following values:
 
-## Laravel Sponsors
+    * **App Name:**
+        `APP_NAME="GayaCare Support"`
+    * **Google reCAPTCHA API:**
+        ```env
+        RECAPTCHA_SITE_KEY=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+        RECAPTCHA_SECRET_KEY=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+        ```
+    * **Brevo (Email) API:**
+        ```env
+        BREVO_API_KEY="Your Brevo API key goes here"
+        MAIL_FROM_ADDRESS="youremailaddress@example.com"
+        MAIL_FROM_NAME="GayaCare Support System"
+        ```
+    To get your Brevo API key, you need to create Brevo Account. Once your account has been created,
+    
+    Go to Setting/SMTP & API Keys and click API keys & MCP. Generate a New API Key.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+    <img width="1319" height="809" alt="image" src="https://github.com/user-attachments/assets/cbaa06b0-51ee-4573-ba05-347eb4426dd3" />
+    
+    Then, we need to set up your email sender.
 
-### Premium Partners
+    Go to Setting/Senders, domain, IPs. Add sender. Use existing email.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+    <img width="1266" height="374" alt="image" src="https://github.com/user-attachments/assets/e81b4d76-7c8e-4c36-acbb-f8294e4c1dd6" />
 
-## Contributing
+5.  **Create Admin Account**
+    Since public registration is disabled, create your initial admin account via Tinker:
+    ```bash
+    php artisan tinker
+    ```
+    Inside the Tinker shell, paste the following:
+    ```php
+    App\Models\User::create([
+        'name' => 'Admin',
+        'email' => 'admin@example.com',
+        'password' => Hash::make('password123'),
+        'role' => 'admin',
+        'is_active' => true,
+    ]);
+    ```
+    Press `Ctrl + C` to exit.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## 💻 Running the Application
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Option A: Local Development (via Herd)
+1. Open the **Laravel Herd** dashboard.
+2. Go to **Sites** and locate `ict-ticketing-system.test`.
+3. Click the URL or visit `http://ict-ticketing-system.test` in your browser.
 
-## Security Vulnerabilities
+### Option B: Local Network Access (Multiple Devices)
+To access the system from other devices on the same Wi-Fi:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1.  **Find your IP Address:** Open CMD and type `ipconfig`. Look for your `IPv4 Address` (e.g., `192.168.0.10`).
+2.  **Update `.env`:** Set `APP_URL=http://192.168.0.10:8000`.
+3.  **Compile Assets:**
+    ```bash
+    npm run dev
+    ```
+4.  **Serve the Application:** In a new terminal tab, run:
+    ```bash
+    php artisan serve --host=192.168.0.10 --port=8000
+    ```
+5.  **Access:** Open any browser and enter `http://192.168.0.10:8000`.
 
-## License
+---
+> **Note:** Ensure your database is running in XAMPP (MySQL) before starting the application.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Now you are able to use the system.
