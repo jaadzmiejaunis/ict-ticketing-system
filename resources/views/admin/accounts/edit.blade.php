@@ -28,18 +28,26 @@
                     <div class="flex flex-col items-center justify-center text-center gap-5 sm:gap-6 pb-6 sm:pb-8 border-b border-gray-100 dark:border-gray-700 transition-colors">
                         <div>
                             <label class="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-3 transition-colors">Profile Image</label>
-                            <div class="relative group inline-block">
+                            <div class="relative group inline-block cursor-pointer" onclick="document.getElementById('avatarInput').click()">
                                 <img id="preview" src="{{ $user->avatar ? asset('storage/' . $user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=4f46e5&color=fff' }}"
-                                     class="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-md transition-colors" alt="Avatar">
-                                <div class="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    class="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-md transition-colors" alt="Avatar">
+
+                                <div class="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <div class="text-white flex flex-col items-center">
+                                        <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2-2H5a2 2 0 01-2-2V9z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        <span class="text-[8px] font-bold uppercase tracking-tighter">Change Photo</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
                         <div class="w-full max-w-xs">
                             <label class="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-2 transition-colors">Upload New Avatar</label>
-                            <input type="file" name="avatar" onchange="previewImage(event)"
-                                   class="block w-full text-xs sm:text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-[10px] sm:file:text-xs file:font-bold file:uppercase file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 transition-colors">
+                            <input type="file" name="avatar" id="avatarInput" onchange="previewImage(event)"
+                                class="block w-full text-xs sm:text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-[10px] sm:file:text-xs file:font-bold file:uppercase file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 transition-colors">
                             <p class="mt-2 text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-500 uppercase font-bold transition-colors">Supported: JPG, PNG, WEBP (Max 2MB)</p>
                             <x-input-error :messages="$errors->get('avatar')" class="mt-2" />
                         </div>
@@ -88,15 +96,31 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-400 uppercase mb-1.5 transition-colors">New Password</label>
-                                <input type="password" name="password"
-                                       class="block w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm text-sm sm:text-base focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                <div class="relative">
+                                    <input type="password" name="password" id="password"
+                                        class="block w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm text-sm sm:text-base focus:ring-indigo-500 focus:border-indigo-500 transition-colors pr-10">
+                                    <button type="button" onclick="togglePassword('password', 'eye-icon-password')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-indigo-500 transition-colors">
+                                        <svg id="eye-icon-password" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                </div>
                                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
                             </div>
 
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-400 uppercase mb-1.5 transition-colors">Confirm Password</label>
-                                <input type="password" name="password_confirmation"
-                                       class="block w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm text-sm sm:text-base focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                <div class="relative">
+                                    <input type="password" name="password_confirmation" id="password_confirmation"
+                                        class="block w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-md shadow-sm text-sm sm:text-base focus:ring-indigo-500 focus:border-indigo-500 transition-colors pr-10">
+                                    <button type="button" onclick="togglePassword('password_confirmation', 'eye-icon-confirm')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-indigo-500 transition-colors">
+                                        <svg id="eye-icon-confirm" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -120,6 +144,25 @@
             }
             if(event.target.files[0]) {
                 reader.readAsDataURL(event.target.files[0]);
+            }
+        }
+        function togglePassword(inputId, iconId) {
+            const passwordInput = document.getElementById(inputId);
+            const eyeIcon = document.getElementById(iconId);
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                // Eye-off icon (slashed)
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                `;
+            } else {
+                passwordInput.type = 'password';
+                // Regular Eye icon
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                `;
             }
         }
     </script>
